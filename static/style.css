@@ -1,0 +1,29 @@
+.help {
+    background-color: #FFFF73;
+    border-radius: 10px;
+    display: none;
+    opacity: 0.9;
+    padding: 10px;
+    z-index: 100;
+    position: absolute;
+}
+
+.help_link:hover + div {
+    display: block;
+}
+
+table.pricereason {
+    text-align: left;
+}
+
+td.invoiceitem input {
+    width: 30em;
+}
+
+td.price {
+    text-align: right;
+}
+
+.error {
+    color: red;
+}

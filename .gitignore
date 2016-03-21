@@ -1,0 +1,5 @@
+consumer-key
+private-key
+*~
+*.pyc
+__pycache__

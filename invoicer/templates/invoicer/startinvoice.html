@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% block scripts %}
+<script type="text/javascript" src="{% static "auto-complete.js" %}"></script>
+<link rel="STYLESHEET" type="text/css" href="{% static "auto-complete.css" %}">
+{% endblock %}
+{% block title %}Choose contact for invoice{% endblock %}
+{% block body %}
+<header>Choose a contact</header>
+<form method="POST">{% csrf_token %}
+  {{form.as_p}}
+  <input type="submit" value="Choose contact">
+</form>
+
+<p><a href="https://go.xero.com/Contacts/Edit.aspx">Follow this link
+to add a new contact.</a></p>
+
+<script type="text/javascript">
+var contact_autoComplete = new autoComplete({
+  selector: 'input[name="name"]',
+  minChars: 2,
+  source: function(term, response){
+    $.getJSON('{% url "invoicer.views.contact_completions" %}', { q: term },
+    function(data) { response(data); });
+  }
+});
+</script>
+
+{% endblock %}

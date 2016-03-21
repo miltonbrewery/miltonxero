@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{band.name}}{% endblock %}
+{% block body %}
+<header>{{band.name}}</header>
+
+{% if abvs %}
+<div name="pricetable">
+  <table>
+    <thead>
+      <tr>
+	<th>ABV</th>
+	{% for t in types %}
+	<th>{{t.name}} price</th>
+	{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in abvs %}
+      <tr>
+	{% for val in row %}
+	<td>{{val}}</td>
+	{% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if configs %}
+<div name="configs">
+  <table>
+    <thead>
+      <tr>
+	<th>Name</th>
+	<th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in configs %}
+      <tr>
+	<td>{{c.name}}</td>
+	<td>{{c.value}}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if overrides %}
+<div name="overrides">
+  <table>
+    <thead>
+      <tr>
+	<th>Product</th>
+	<th>Price delta</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for o in overrides %}
+      <tr>
+	<td>{{o.product}}</td>
+	<td>{{o.price}}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

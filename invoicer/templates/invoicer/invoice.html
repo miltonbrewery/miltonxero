@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% block scripts %}
+<script type="text/javascript" src="{% static "auto-complete.js" %}"></script>
+<link rel="STYLESHEET" type="text/css" href="{% static "auto-complete.css" %}">
+{% endblock %}
+{% block title %}Create invoice{% endblock %}
+{% block body %}
+<header>Invoice for {{contactname}}</header>
+<script type="text/javascript">
+  var autocompletes = new Array();
+</script>
+<form method="POST">{% csrf_token %}
+  {{cform.as_p}}
+  {{iform.management_form}}
+  <table class="invoiceitems">
+    <thead>
+      <tr>
+	{% if iform.can_delete %}
+	<th>Delete?</th>
+	{% endif %}
+	<th>Item</th>
+	<th>ABV</th>
+	<th>Barrels</th>
+	<th>Price/barrel</th>
+	<th>Total</th>
+	<th>Account</th>
+	<th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for form in iform %}
+      <tr>
+	{% if iform.can_delete %}
+	<td>{{form.DELETE}}</td>
+	{% endif %}
+	<td class="invoiceitem">
+	  {{form.item.as_widget}}
+	  {% if form.item.errors %}
+	  <ul class="errorlist">
+	    {% for err in form.item.errors %}
+	    <li>{{err}}</li>
+	    {% endfor %}
+	  </ul>
+	  {% endif %}
+	  <script type="text/javascript">
+	    autocompletes["{{form.item.html_name}}"] = new autoComplete({
+	    selector: 'input[name="{{form.item.html_name}}"]',
+	    minChars: 5,
+	    cache: false,
+	    source: function(term, response){
+	    $.getJSON('{% url "invoicer.views.item_completions" %}', { q: term },
+	    function(data) { response(data); });
+	    }
+	    });
+	  </script>
+	</td>
+	<td id="{{form.item.html_name}}-abv">{{form.abv}}</td>
+	<td id="{{form.item.html_name}}-barrels">{{form.barrels}}</td>
+	<td id="{{form.item.html_name}}-barrelprice" class="price">
+	  {% if form.barrelprice != "" %}<a href="#" class="help_link">{{form.barrelprice}}</a><div class="help" id="{{form.item.html_name}}-reasons">
+	    {% if form.barrelreasons %}
+	    <table class="pricereason">
+	      {% for r, p in form.barrelreasons %}
+	      <tr><td>{{r}}</td><td class="price">{{p}}</td></tr>
+	      {% endfor %}
+	    </table>
+	    {% endif %}
+	  </div>{% endif %}
+	</td>
+	<td id="{{form.item.html_name}}-total" class="price">{{form.totalprice}}</td>
+	<td id="{{form.item.html_name}}-account">{{form.account}}</td>
+	<td class="error">{% for e in form.non_field_errors %}{{e}}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <input type="submit" name="save" value="Save">
+</form>
+
+{% endblock %}
