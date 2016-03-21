@@ -11,10 +11,6 @@
   {{form.as_p}}
   <input type="submit" value="Choose contact">
 </form>
-
-<p><a href="https://go.xero.com/Contacts/Edit.aspx">Follow this link
-to add a new contact.</a></p>
-
 <script type="text/javascript">
 var contact_autoComplete = new autoComplete({
   selector: 'input[name="name"]',
@@ -25,5 +21,23 @@ var contact_autoComplete = new autoComplete({
   }
 });
 </script>
+
+<p><a href="https://go.xero.com/Contacts/Edit.aspx">Add a new contact.
+(Contacts cannot be removed once added.)</a></p>
+
+<p><a href="{% url "admin:invoicer_product_changelist" %}">Add, edit
+or remove products.</a></p>
+
+{% if bands %}
+<p>The following price bands are defined:</p>
+<ul>
+  {% for b in bands %}
+  <li><a href="{% url "invoicer.views.priceband" b.pk %}">{{b.name}}</a></li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<p><a href="{% url "admin:invoicer_priceband_changelist" %}">Add, edit or
+remove price bands.</a></p>
 
 {% endblock %}

@@ -15,60 +15,17 @@ oauth = OAuth1(
     signature_method=SIGNATURE_RSA,
     signature_type=SIGNATURE_TYPE_AUTH_HEADER)
 
+class Problem(Exception):
+    pass
+
 def _textelem(name, text):
     e = Element(name)
     e.text = text
     return e
 
-def send_session_totals(api, session, contact, reference=None,
-                        differences_account=None):
-    """Send session totals to Xero
-
-    session is a models.Session instance.  Returns a string describing
-    what happened.
-    """
-    if not session.endtime:
-        return "Session isn't closed!  Could not send."
-
-    invoices = Element("Invoices")
-    inv = SubElement(invoices, "Invoice")
-    inv.append(_textelem("Type", "ACCREC"))
-    c = SubElement(inv, "Contact")
-    c.append(_textelem("Name", contact))
-    inv.append(_textelem("Date", session.date.isoformat()))
-    inv.append(_textelem(
-        "DueDate", (session.date + datetime.timedelta(days=4)).isoformat()))
-    if reference:
-        inv.append(_textelem("Reference", reference))
-    inv.append(_textelem(
-        "LineAmountTypes", "Inclusive"))
-    litems = SubElement(inv, "LineItems")
-    for dept, total in session.dept_totals:
-        extras = fromstring("<e>{}</e>".format(dept.accinfo))
-        li = SubElement(litems, "LineItem")
-        li.append(_textelem("Description", dept.description + " sales"))
-        li.append(_textelem("Quantity", "1.00"))
-        li.append(_textelem("UnitAmount", unicode(total)))
-        for sub in extras:
-            li.append(sub)
-            xml = tostring(invoices)
-
-    #if differences_account:
-    #    li = SubElement(litems, "LineItem")
-    #    li.append(_textelem("Description", "
-    
-    log.debug("XML to send: {}".format(xml))
-    r = requests.put(XERO_ENDPOINT_URL + "Invoices/",
-                     data={'xml': xml},
-                     auth=oauth)
-    log.debug("Response: {}".format(r))
-    log.debug("Response data: {}".format(r.text))
-    return "Session {} sent to Xero: response code {}".format(
-        session.id, r.status_code)
-
 def _fieldtext(c, field):
     f = c.find(field)
-    if not f:
+    if f is None:
         return
     return f.text
 
@@ -110,3 +67,57 @@ def get_contact(contactid):
     if not c:
         return
     return _contact_to_dict(c)
+
+def update_products(products):
+    items = Element("Items")
+    for p in products:
+        item = Element("Item")
+        item.append(_textelem("Code", p.code))
+        item.append(_textelem("Name", str(p)))
+        item.append(_textelem("Description", str(p)))
+        items.append(item)
+
+    xml = tostring(items)
+    r = requests.post(XERO_ENDPOINT_URL + "Items/",
+                      data={'xml': xml},
+                      auth=oauth)
+    if r.status_code != 200:
+        return r.status_code
+
+def send_invoice(contactid, priceband, items, override_account=None):
+    invoices = Element("Invoices")
+    inv = SubElement(invoices, "Invoice")
+    inv.append(_textelem("Type", "ACCREC"))
+    c = SubElement(inv, "Contact")
+    c.append(_textelem("ContactID", contactid))
+    inv.append(_textelem(
+        "LineAmountTypes", "Exclusive"))
+    litems = SubElement(inv, "LineItems")
+    for i in items:
+        li = SubElement(litems, "LineItem")
+        li.append(_textelem("Description", str(i)))
+        li.append(_textelem("ItemCode", i.product.code))
+        li.append(_textelem("Quantity", str(i.barrels)))
+        li.append(_textelem("AccountCode",
+                            override_account or i.product.account))
+        li.append(_textelem("UnitAmount", str(i.priceperbarrel(priceband))))
+    xml = tostring(invoices)
+    print(xml)
+    r = requests.put(XERO_ENDPOINT_URL + "Invoices/",
+                     data={'xml': xml},
+                     auth=oauth)
+    if r.status_code != 200:
+        raise Problem("Recieved {} response".format(r.status_code))
+    print("Response: {}".format(r))
+    print("Response data: {}".format(r.text))
+    root = fromstring(r.text)
+    if root.tag != "Response":
+        raise Problem("Response root tag '{}' was not 'Response'".format(
+            root.tag))
+    i = root.find("./Invoices/Invoice")
+    if not i:
+        raise Problem("Response did not contain invoice details")
+    invid = _fieldtext(i, "InvoiceID")
+    if not invid:
+        raise Problem("No invoice ID was returned")
+    return invid

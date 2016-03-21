@@ -7,5 +7,6 @@ urlpatterns = patterns(
     # url(r'^$', 'miltonxero.views.home', name='home'),
     # url(r'^blog/', include('blog.urls')),
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^invoicer/', include('invoicer.urls')),
+    url(r'^$', 'invoicer.views.startinvoice'),
+    url(r'^', include('invoicer.urls')),
 )

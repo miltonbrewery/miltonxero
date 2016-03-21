@@ -100,13 +100,13 @@ XERO_PRIVATE_KEY = read("private-key")
 # List of (unit name, barrels, producttype, flags)
 from decimal import Decimal
 PRODUCT_UNITS = [
-    ('pin', Decimal("0.125"), "Cask ale", None),
-    ('polypin', Decimal("0.125"), "Cask ale", ["vat-roundup"]),
-    ('firkin', Decimal("0.25"), "Cask ale", None),
-    ('kil', Decimal("0.5"), "Cask ale", None),
-    ('barrel', Decimal("1.0"), "Cask ale", None),
-    ('30l keg', Decimal("0.1833"), "Craft keg", None),
-    ('50l keg', Decimal("0.3055"), "Craft keg", None),
+    ('pin', Decimal("0.125"), "Cask ale", ["vat-roundup-50p"]),
+    ('polypin', Decimal("0.125"), "Cask ale", ["vat-roundup-pound"]),
+    ('firkin', Decimal("0.25"), "Cask ale", []),
+    ('kil', Decimal("0.5"), "Cask ale", []),
+    ('barrel', Decimal("1.0"), "Cask ale", []),
+    ('30l keg', Decimal("0.1833"), "Craft keg", []),
+    ('50l keg', Decimal("0.3055"), "Craft keg", []),
 ]
 
 # Current VAT multiplier

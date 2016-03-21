@@ -60,7 +60,7 @@
     <tbody>
       {% for o in overrides %}
       <tr>
-	<td>{{o.product}}</td>
+	<td><a href="{% url "admin:invoicer_product_change" o.product.pk %}">{{o.product}}</a></td>
 	<td>{{o.price}}</td>
       </tr>
       {% endfor %}
@@ -68,5 +68,29 @@
   </table>
 </div>
 {% endif %}
+
+<section>
+  <form enctype="multipart/form-data" method="post">{% csrf_token %}
+    {{form.as_p}}
+    <input type="submit" name="update" value="Update price band">
+  </form>
+
+  <p>The CSV file must be in the following format:</p>
+  <p>The first row contains headers, not data.  The header for the
+  first column must be "ABV".  The headers for subsequent columns must
+  be names of product types ("Cask ale", etc.).  Processing stops at
+  the first blank header; subsequent headers are ignored.</p>
+  <p>Subsequent rows are processed based on the contents of the first
+    column:</p>
+  <dl>
+    <dd>Blank</dd><dt>The row is ignored</dt>
+    <dd>Numeric</dd><dt>The number is treated as an ABV.  The second
+    and subsequent columns are used as the base prices for this ABV,
+    for the product types in the column header.</dt>
+    <dd>Text</dd><dt>The text is used as the name of a configuration
+    variable.  The second column is used as the value of the
+    configuration variable.  Other columns are ignored.</dt>
+  </dl>
+</section>
 
 {% endblock %}

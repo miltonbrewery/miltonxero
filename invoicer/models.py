@@ -4,9 +4,24 @@ from django.conf import settings
 
 zero = Decimal("0.00")
 
+def _round_up_to(amount, multiple):
+    difference = amount % multiple
+    if difference:
+        amount = amount + multiple - difference
+    return amount
+
+def _vatinc_roundup_adjustment(item, current_price, multiple):
+    vatinc_price = item.barrelsperitem * current_price * settings.VAT_MULTIPLIER
+    desired_price = _round_up_to(vatinc_price, multiple)
+    difference_inc_vat = desired_price - vatinc_price
+    difference_ex_vat = difference_inc_vat / settings.VAT_MULTIPLIER
+    difference_per_barrel = difference_ex_vat / item.barrelsperitem
+    adjustment = difference_per_barrel.quantize(Decimal("0.01"))
+    return adjustment
+
 class PriceBand(models.Model):
     """A named group of pricing details."""
-    name = models.CharField(max_length=40)
+    name = models.CharField(max_length=40, unique=True)
     def __str__(self):
         return self.name
     def price_for(self, item):
@@ -32,8 +47,8 @@ class PriceBand(models.Model):
         try:
             override = PriceOverride.objects.get(
                 band=self, product=item.product)
-            price = price + override
-            reasons.append(("Price adjustment", override))
+            price = price + override.pricechange
+            reasons.append(("Price adjustment", override.pricechange))
         except PriceOverride.DoesNotExist:
             pass
         # See if there is an extra charge for swaps
@@ -54,16 +69,15 @@ class PriceBand(models.Model):
         except ConfigOption.DoesNotExist:
             pass
         # See if there's anything in the flags
-        if "vat-roundup" in item.flags:
-            vatinc_price = item.barrelsperitem * price * settings.VAT_MULTIPLIER
-            desired_price = vatinc_price.quantize(
-                Decimal("1."), rounding=ROUND_UP)
-            difference_inc_vat = desired_price - vatinc_price
-            difference_ex_vat = difference_inc_vat / settings.VAT_MULTIPLIER
-            difference_per_barrel = difference_ex_vat / item.barrelsperitem
-            adjustment = difference_per_barrel.quantize(Decimal("0.01"))
+        if "vat-roundup-pound" in item.flags:
+            adjustment = _vatinc_roundup_adjustment(item, price, Decimal("1.00"))
             price = price + adjustment
             reasons.append(("Round up to whole pounds inc-VAT", adjustment))
+        if "vat-roundup-50p" in item.flags:
+            adjustment = _vatinc_roundup_adjustment(item, price, Decimal("0.50"))
+            price = price + adjustment
+            reasons.append(("Round up to £0.50 inc-VAT", adjustment))
+            
         return price, reasons
 
 class ConfigOption(models.Model):
@@ -110,9 +124,13 @@ class Product(models.Model):
     type = models.ForeignKey(ProductType)
     swap = models.BooleanField(default=True)
     def __str__(self):
+        # This is used as the Xero item description
         return "{} ({}% ABV)".format(self.name,self.abv)
+    @property
     def account(self):
         return settings.SWAP_ACCOUNT if self.swap else settings.DEFAULT_ACCOUNT
+    class Meta:
+        ordering = ['name']
 
 class Price(models.Model):
     """A regular price for a band/type/abv combination"""
@@ -124,9 +142,19 @@ class Price(models.Model):
         unique_together = (
             ("band", "type", "abv"),
         )
+    def __str__(self):
+        return "{}/{}: {}: £{}".format(
+            self.band.name, self.type.name, self.abv, self.price)
 
 class PriceOverride(models.Model):
     """A price adjustment for a band/product combination"""
     band = models.ForeignKey(PriceBand)
     product = models.ForeignKey(Product)
-    price = models.DecimalField(max_digits=6, decimal_places=2)
+    pricechange = models.DecimalField(max_digits=6, decimal_places=2)
+    class Meta:
+        unique_together = (
+            ("band", "product"),
+            )
+    def __str__(self):
+        return "{}: {}: adjust by £{}".format(
+            self.band.name, self.product.name, self.pricechange)
