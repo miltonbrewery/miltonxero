@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{band.name}}{% endblock %}
 {% block body %}
-<header>{{band.name}}</header>
+<h1>{{band.name}}</h1>
 
 {% if abvs %}
 <div name="pricetable">
+  <h2>Base price table</h2>
   <table>
     <thead>
       <tr>
@@ -29,6 +30,7 @@
 
 {% if configs %}
 <div name="configs">
+  <h2>Configuration variables</h2>
   <table>
     <thead>
       <tr>
@@ -50,6 +52,7 @@
 
 {% if overrides %}
 <div name="overrides">
+  <h2>Price adjustments</h2>
   <table>
     <thead>
       <tr>
@@ -70,6 +73,7 @@
 {% endif %}
 
 <section>
+  <h2>Upload new table</h2>
   <form enctype="multipart/form-data" method="post">{% csrf_token %}
     {{form.as_p}}
     <input type="submit" name="update" value="Update price band">

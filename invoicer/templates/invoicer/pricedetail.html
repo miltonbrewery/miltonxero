@@ -1,0 +1,12 @@
+{% if price != "" %}
+<a href="#" class="help_link" tabindex="-1">{{price}}</a>
+<div class="help">
+  {% if reasons %}
+  <table class="pricereason">
+    {% for r, p in reasons %}
+    <tr><td>{{r}}</td><td class="price">{{p}}</td></tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+</div>
+{% endif %}

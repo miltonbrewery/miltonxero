@@ -7,4 +7,5 @@ urlpatterns = patterns(
     url(r'^invoice/(?P<contactid>[a-f0-9-]+)/$', 'invoice'),
     url(r'^completions/contact.json$', 'contact_completions'),
     url(r'^completions/item.json$', 'item_completions'),
+    url(r'^itemdata/item.json$', 'item_details'),
 )

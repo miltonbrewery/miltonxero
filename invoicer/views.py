@@ -7,6 +7,7 @@ from django.utils import timezone
 from django import forms
 from django.conf import settings
 from django.contrib import messages
+from django.template.loader import render_to_string
 from invoicer.models import *
 from invoicer import xero
 from decimal import Decimal, ROUND_HALF_UP
@@ -23,7 +24,9 @@ class UpdatePriceBandForm(forms.Form):
         help_text="Clear all product price adjustments for this price band.")
 
 class _PricebandUpdateFailure(Exception):
-    pass
+    def __init__(self, message):
+        self.message = message
+
 @transaction.atomic
 def _csv_to_priceband(band, cd):
     Price.objects.filter(band=band).delete()
@@ -78,7 +81,7 @@ def priceband(request, bandid):
                 messages.success(request, "Price band updated.")
                 return HttpResponseRedirect("")
             except _PricebandUpdateFailure as e:
-                messages.error(request, e.args[0])
+                messages.error(request, e.message)
     else:
         form = UpdatePriceBandForm()
     
@@ -139,15 +142,17 @@ def startinvoice(request):
 class ContactOptionsForm(forms.Form):
     priceband = forms.ModelChoiceField(
         queryset=PriceBand.objects,
-        label="Price band")
+        label="Price band",
+        widget=forms.Select(attrs={"onChange":'javascript: submit()'}),
+    )
     account = forms.CharField(max_length=10, required=False,
                               help_text="Overrides accounts shown below")
 
 class _XeroSendFailure(Exception):
-    pass
+    def __init__(self, message):
+        self.message = message
 
 def _send_to_xero(contactid, contact_extra, lines):
-    # Interpret lines and build a set of products for this invoice
     products = set()
     invitems = []
     for l in lines:
@@ -159,19 +164,19 @@ def _send_to_xero(contactid, contact_extra, lines):
         products.add(item.product)
         invitems.append(item)
 
-    # Send product details to Xero
     problem = xero.update_products(products)
     if problem:
         raise _XeroSendFailure("Received {} response when sending product "
                                "details to Xero".format(problem))
 
     try:
-        invid = xero.send_invoice(
-            contactid, contact_extra.default_priceband, invitems,
+        invid, warnings = xero.send_invoice(
+            contactid, contact_extra.priceband, invitems,
             override_account=contact_extra.account)
     except xero.Problem as e:
-        raise _XeroSendFailure("Failed sending invoice to Xero: {}".format(e.args[0]))
-    return invid
+        raise _XeroSendFailure("Failed sending invoice to Xero: {}".format(
+            e.message))
+    return invid, warnings
 
 class InvoiceLineForm(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -181,9 +186,6 @@ class InvoiceLineForm(forms.Form):
             l = parse_item(kwargs['initial']['item'], exactmatch=True)
             if len(l) == 1:
                 self.cp = l[0]
-        # XXX wrong place to cache these - use InvoiceItem
-        self.price = None
-        self.reasons = None
     item = forms.CharField(max_length=500, required=True)
     def clean(self):
         cleaned_data = super(InvoiceLineForm, self).clean()
@@ -199,26 +201,17 @@ class InvoiceLineForm(forms.Form):
         return str(self.cp.product.abv)+"%" if self.cp else ""
     def barrels(self):
         return self.cp.barrels if self.cp else ""
-    def get_price_and_reasons(self):
-        # XXX this is the wrong place to cache these - use InvoiceItem
-        if self.price:
-            return
-        if self.cp and self.priceband:
-            self.price, self.reasons = self.priceband.price_for(self.cp)
     def barrelprice(self):
         if self.cp and self.priceband:
-            self.get_price_and_reasons()
-            return self.price
+            return self.cp.priceperbarrel(self.priceband)
         return ""
     def barrelreasons(self):
         if self.cp and self.priceband:
-            self.get_price_and_reasons()
-            return self.reasons
+            return self.cp.pricereasons(self.priceband)
         return []
     def totalprice(self):
         if self.cp and self.priceband:
-            self.get_price_and_reasons()
-            return (self.price * self.cp.barrels).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            return self.cp.price(self.priceband)
         return ""
     def account(self):
         if self.cp:
@@ -266,28 +259,32 @@ def invoice(request, contactid):
             if not contact_extra:
                 contact_extra = Contact(xero_id=contactid)
             contact_extra.name = contactname
-            contact_extra.updated = datetime.datetime.now()
-            contact_extra.default_priceband = cform.cleaned_data['priceband']
+            contact_extra.updated = timezone.now()
+            contact_extra.priceband = cform.cleaned_data['priceband']
             contact_extra.account = cform.cleaned_data['account']
             contact_extra.save()
             request.session[contactid] = [
                 i for i in iform.cleaned_data if not i.get('DELETE',True)]
             if "send" in request.POST:
                 try:
-                    invid = _send_to_xero(contactid, contact_extra,
-                                          request.session[contactid])
+                    invid, warnings = _send_to_xero(
+                        contactid, contact_extra, request.session[contactid])
                     del request.session[contactid]
+                    if warnings:
+                        return render(request, 'invoicer/invoicewarnings.html',
+                                      {"invid": invid,
+                                       "warnings": warnings})
                     return HttpResponseRedirect(
                         "https://go.xero.com/AccountsReceivable/"
                         "Edit.aspx?InvoiceID=" + invid)
                 except _XeroSendFailure as e:
-                    messages.error(request, e.args[0])
+                    messages.error(request, e.message)
             return HttpResponseRedirect("")
     else:
         initial = {}
         priceband = None
         if contact_extra:
-            priceband = contact_extra.default_priceband
+            priceband = contact_extra.priceband
             initial['priceband'] = priceband
             initial['account'] = contact_extra.account
         cform = ContactOptionsForm(initial=initial)
@@ -295,6 +292,7 @@ def invoice(request, contactid):
             priceband, initial=request.session.get(contactid))
     return render(request, 'invoicer/invoice.html',
                   {"contactname": contactname,
+                   "priceband": priceband,
                    "cform": cform,
                    "iform": iform})
 
@@ -302,8 +300,6 @@ def contact_completions(request):
     q = request.GET['q']
     l = xero.get_contacts(q, use_contains=True)
     return JsonResponse([x["Name"] for x in l], safe=False)
-
-itemre = re.compile(r'^(?P<qty>\d+)\s*(?P<unit>[\w]+?( keg)?)s?\s+(?P<product>[\w\s]+)$')
 
 class InvoiceItem:
     def __init__(self, items, unitname, barrels, producttype, flags, product):
@@ -328,6 +324,12 @@ class InvoiceItem:
     def pricereasons(self, priceband):
         self._fetch_price(priceband)
         return self._pricebands[priceband][1]
+    def price(self, priceband):
+        self._fetch_price(priceband)
+        return (self._pricebands[priceband][0] * self.barrels)\
+            .quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+itemre = re.compile(r'^(?P<qty>\d+)\s*(?P<unit>[\w]+?( keg)?)s?\s+(?P<product>[\w\s]+)$')
 
 def parse_item(description, exactmatch=False):
     """Convert an item description to a list of InvoiceItem objects
@@ -335,7 +337,7 @@ def parse_item(description, exactmatch=False):
     m = itemre.match(description)
     if not m:
         return []
-    
+
     items = int(m.group('qty'))
     unitname = m.group('unit')
     product = m.group('product')
@@ -363,28 +365,53 @@ def parse_item(description, exactmatch=False):
                           .all()
         for p in products:
             l.append(InvoiceItem(items, name, barrels, producttype, flags, p))
+    l.sort(key=lambda item:item.product.swap)
     return l
 
 def item_completions(request):
-    q = request.GET['q']
+    try:
+        q = request.GET['q']
+    except KeyError:
+        return JsonResponse(["No q parameter in request"], safe=False)
     l = parse_item(q)
     return JsonResponse([str(i) for i in l], safe=False)
 
 def item_details(request):
-    q = request.GET['q']
-    band = int(request.GET['band'])
-    # band will be the pk - integer
-    
-    l = parse_item(q)
-    if len(l) != 1:
-        return JsonResponse({})
-    i = l[0]
-    d = {}
-    #        price, reasons = 
     d = {
-        'abv': i.abv,
+        'abv': '',
+        'barrels': '',
+        'barrelprice': '',
+        'total': '',
+        'account': '',
+        'error': '',
+        }
+    try:
+        q = request.GET['q']
+        band = int(request.GET['b'])
+    except KeyError:
+        d['error'] = "Invalid q and/or b parameters in request"
+        return JsonResponse(d)
+    # band will be the pk - integer
+    try:
+        priceband = PriceBand.objects.get(pk=band)
+    except PriceBand.DoesNotExist:
+        d['error'] = "Price band {} does not exist".format(band)
+        return JsonResponse(d)
+    l = parse_item(q, exactmatch=True)
+    if len(l) != 1:
+        d['error'] = "Ambiguous invoice line"
+        return JsonResponse(d)
+    i = l[0]
+    d = {
+        'abv': "{}%".format(i.product.abv),
         'barrels': i.barrels,
-        'barrelprice': i.barrelprice,
-        'total': 0.00,
+        'barrelprice': render_to_string(
+            "invoicer/pricedetail.html",
+            {"price": i.priceperbarrel(priceband),
+             "reasons": i.pricereasons(priceband),
+            }),
+        'total': i.price(priceband),
+        'account': i.product.account,
+        'error': "(Not saved)",
     }
     return JsonResponse(d)

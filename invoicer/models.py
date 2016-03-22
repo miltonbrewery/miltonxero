@@ -24,6 +24,9 @@ class PriceBand(models.Model):
     name = models.CharField(max_length=40, unique=True)
     def __str__(self):
         return self.name
+    @models.permalink
+    def get_absolute_url(self):
+        return ('invoicer.views.priceband',[self.pk])
     def price_for(self, item):
         """Price per barrel for an invoice item
 
@@ -56,16 +59,24 @@ class PriceBand(models.Model):
             try:
                 config = ConfigOption.objects.get(
                     band=self, name="swap-premium")
-                price = price + Decimal(config.value)
-                reasons.append(("Swap premium", config.value))
+                try:
+                    adjustment = Decimal(config.value)
+                except:
+                    adjustment = zero
+                price = price + adjustment
+                reasons.append(("Swap premium", adjustment))
             except ConfigOption.DoesNotExist:
                 pass
         # See if there is an adjustment for the unit size
         try:
             config = ConfigOption.objects.get(
                 band=self, name=item.unitname + "-premium")
-            price = price + Decimal(config.value)
-            reasons.append((item.unitname.capitalize() + " premium", config.value))
+            try:
+                adjustment = Decimal(config.value)
+            except:
+                adjustment = zero
+            price = price + adjustment
+            reasons.append((item.unitname.capitalize() + " premium", adjustment))
         except ConfigOption.DoesNotExist:
             pass
         # See if there's anything in the flags
@@ -99,10 +110,15 @@ class Contact(models.Model):
     the time the cache was lated updated.
     """
     xero_id = models.CharField(max_length=36, unique=True) # uuid
-    default_priceband = models.ForeignKey(PriceBand)
+    priceband = models.ForeignKey(PriceBand)
     account = models.CharField(max_length=10, blank=True) # xero account code
     name = models.CharField(max_length=500) # xero max is 500
     updated = models.DateTimeField()
+    def __str__(self):
+        return self.name
+    @models.permalink
+    def get_absolute_url(self):
+        return ('invoicer.views.invoice',[self.xero_id])
 
 class ProductType(models.Model):
     """Type of product, eg. real ale or craft keg

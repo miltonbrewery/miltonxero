@@ -27,3 +27,7 @@ td.price {
 .error {
     color: red;
 }
+
+td.deletebutton {
+    text-align: center;
+}

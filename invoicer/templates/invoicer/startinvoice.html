@@ -6,7 +6,8 @@
 {% endblock %}
 {% block title %}Choose contact for invoice{% endblock %}
 {% block body %}
-<header>Choose a contact</header>
+<h1>Milton Beer Invoice Tool</h1>
+<h2>Choose a contact to invoice</h2>
 <form method="POST">{% csrf_token %}
   {{form.as_p}}
   <input type="submit" value="Choose contact">
@@ -22,6 +23,7 @@ var contact_autoComplete = new autoComplete({
 });
 </script>
 
+<h2>Maintenance options</h2>
 <p><a href="https://go.xero.com/Contacts/Edit.aspx">Add a new contact.
 (Contacts cannot be removed once added.)</a></p>
 

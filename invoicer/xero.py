@@ -16,7 +16,8 @@ oauth = OAuth1(
     signature_type=SIGNATURE_TYPE_AUTH_HEADER)
 
 class Problem(Exception):
-    pass
+    def __init__(self, message):
+        self.message = message
 
 def _textelem(name, text):
     e = Element(name)
@@ -95,21 +96,21 @@ def send_invoice(contactid, priceband, items, override_account=None):
     litems = SubElement(inv, "LineItems")
     for i in items:
         li = SubElement(litems, "LineItem")
-        li.append(_textelem("Description", str(i)))
+        li.append(_textelem("Description",
+                            str(i) + " ({}% ABV)".format(i.product.abv)))
         li.append(_textelem("ItemCode", i.product.code))
         li.append(_textelem("Quantity", str(i.barrels)))
         li.append(_textelem("AccountCode",
                             override_account or i.product.account))
         li.append(_textelem("UnitAmount", str(i.priceperbarrel(priceband))))
     xml = tostring(invoices)
-    print(xml)
     r = requests.put(XERO_ENDPOINT_URL + "Invoices/",
                      data={'xml': xml},
                      auth=oauth)
     if r.status_code != 200:
         raise Problem("Recieved {} response".format(r.status_code))
-    print("Response: {}".format(r))
-    print("Response data: {}".format(r.text))
+    #print("Response: {}".format(r))
+    #print("Response data: {}".format(r.text))
     root = fromstring(r.text)
     if root.tag != "Response":
         raise Problem("Response root tag '{}' was not 'Response'".format(
@@ -120,4 +121,5 @@ def send_invoice(contactid, priceband, items, override_account=None):
     invid = _fieldtext(i, "InvoiceID")
     if not invid:
         raise Problem("No invoice ID was returned")
-    return invid
+    warnings = [w.text for w in i.findall("./Warnings/Warning/Message")]
+    return invid, warnings

@@ -9,7 +9,7 @@ class Command(BaseCommand):
     help = 'Import CSV file of products'
     def handle(self, *args, **options):
         filename=args[0]
-        cask = ProductType.objects.get(name="Cask ale")
+        cask = ProductType.objects.get(name="Cask Ale")
         with open(filename, encoding='iso-8859-1') as f:
             reader = csv.DictReader(f, quotechar="'")
             for r in reader:

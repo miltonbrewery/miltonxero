@@ -6,9 +6,35 @@
 {% endblock %}
 {% block title %}Create invoice{% endblock %}
 {% block body %}
-<header>Invoice for {{contactname}}</header>
+<h1>Invoice for {{contactname}}</h1>
 <script type="text/javascript">
   var autocompletes = new Array();
+
+  var updateDesc = function(basename, response){
+    document.getElementById(basename+"-abv").innerHTML = response['abv'];
+    document.getElementById(basename+"-barrels").innerHTML = response['barrels'];
+    document.getElementById(basename+"-barrelprice").innerHTML = response['barrelprice'];
+    document.getElementById(basename+"-total").innerHTML = response['total'];
+    document.getElementById(basename+"-account").innerHTML = response['account'];
+    document.getElementById(basename+"-error").innerHTML = response['error'];
+  };
+
+  var addAutoComplete = function(basename){
+    autocompletes[basename] = new autoComplete({
+      selector: 'input[name="'+basename+'"]',
+      minChars: 5,
+      cache: false,
+      source: function(term, response){
+        $.getJSON('{% url "invoicer.views.item_completions" %}', { q: term },
+        function(data) { response(data); });
+      },
+      onSelect: function(event, term, item){
+        $.getJSON('{% url "invoicer.views.item_details" %}',
+          { q: term, b: {{priceband.pk}} },
+            function(data) { updateDesc(basename, data); });
+      },
+    });
+  };
 </script>
 <form method="POST">{% csrf_token %}
   {{cform.as_p}}
@@ -32,7 +58,7 @@
       {% for form in iform %}
       <tr>
 	{% if iform.can_delete %}
-	<td>{{form.DELETE}}</td>
+	<td class="deletebutton">{{form.DELETE}}</td>
 	{% endif %}
 	<td class="invoiceitem">
 	  {{form.item.as_widget}}
@@ -44,33 +70,17 @@
 	  </ul>
 	  {% endif %}
 	  <script type="text/javascript">
-	    autocompletes["{{form.item.html_name}}"] = new autoComplete({
-	    selector: 'input[name="{{form.item.html_name}}"]',
-	    minChars: 5,
-	    cache: false,
-	    source: function(term, response){
-	    $.getJSON('{% url "invoicer.views.item_completions" %}', { q: term },
-	    function(data) { response(data); });
-	    }
-	    });
+	    addAutoComplete("{{form.item.html_name}}");
 	  </script>
 	</td>
 	<td id="{{form.item.html_name}}-abv">{{form.abv}}</td>
 	<td id="{{form.item.html_name}}-barrels">{{form.barrels}}</td>
 	<td id="{{form.item.html_name}}-barrelprice" class="price">
-	  {% if form.barrelprice != "" %}<a href="#" class="help_link">{{form.barrelprice}}</a><div class="help" id="{{form.item.html_name}}-reasons">
-	    {% if form.barrelreasons %}
-	    <table class="pricereason">
-	      {% for r, p in form.barrelreasons %}
-	      <tr><td>{{r}}</td><td class="price">{{p}}</td></tr>
-	      {% endfor %}
-	    </table>
-	    {% endif %}
-	  </div>{% endif %}
+	  {% include "invoicer/pricedetail.html" with price=form.barrelprice reasons=form.barrelreasons %}
 	</td>
 	<td id="{{form.item.html_name}}-total" class="price">{{form.totalprice}}</td>
 	<td id="{{form.item.html_name}}-account">{{form.account}}</td>
-	<td class="error">{% for e in form.non_field_errors %}{{e}}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+	<td id="{{form.item.html_name}}-error" class="error">{% for e in form.non_field_errors %}{{e}}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -78,5 +88,12 @@
   <input type="submit" name="save" value="Save / update">
   <input type="submit" name="send" value="Send to Xero">
 </form>
+<script type="text/javascript">
+  $('input[type=checkbox]').each(function () {
+  this.tabIndex=-1;
+  });
+</script>
 
+<p><a href="{% url "invoicer.views.startinvoice" %}">Choose another
+    contact</a></p>
 {% endblock %}
