@@ -19,6 +19,17 @@ def _vatinc_roundup_adjustment(item, current_price, multiple):
     adjustment = difference_per_barrel.quantize(Decimal("0.01"))
     return adjustment
 
+def _getconfig(band, name):
+    try:
+        config = ConfigOption.objects.get(band=band, name=name)
+        try:
+            return Decimal(config.value)
+        except:
+            return zero
+    except ConfigOption.DoesNotExist:
+        pass
+    return zero
+
 class PriceBand(models.Model):
     """A named group of pricing details."""
     name = models.CharField(max_length=40, unique=True)
@@ -51,34 +62,26 @@ class PriceBand(models.Model):
             override = PriceOverride.objects.get(
                 band=self, product=item.product)
             price = price + override.pricechange
-            reasons.append(("Price adjustment", override.pricechange))
+            reasons.append(("{} adjustment".format(override.product.name),
+                            override.pricechange))
         except PriceOverride.DoesNotExist:
             pass
         # See if there is an extra charge for swaps
         if item.product.swap:
-            try:
-                config = ConfigOption.objects.get(
-                    band=self, name="swap-premium")
-                try:
-                    adjustment = Decimal(config.value)
-                except:
-                    adjustment = zero
-                price = price + adjustment
-                reasons.append(("Swap premium", adjustment))
-            except ConfigOption.DoesNotExist:
-                pass
+            adjustment = _getconfig(self, "swap-premium")
+            price = price + adjustment
+            reasons.append(("Swap premium", adjustment))
         # See if there is an adjustment for the unit size
-        try:
-            config = ConfigOption.objects.get(
-                band=self, name=item.unitname + "-premium")
-            try:
-                adjustment = Decimal(config.value)
-            except:
-                adjustment = zero
+        adjustment = _getconfig(self, item.unitname + "-premium")
+        if adjustment:
             price = price + adjustment
             reasons.append((item.unitname.capitalize() + " premium", adjustment))
-        except ConfigOption.DoesNotExist:
-            pass
+        # See if there is an adjustment for the unit size with this product
+        adjustment = _getconfig(self, item.unitname + "-" + item.product.name)
+        if adjustment:
+            price = price + adjustment
+            reasons.append((item.product.name + " " + item.unitname +
+                            " adjustment", adjustment))
         # See if there's anything in the flags
         if "vat-roundup-pound" in item.flags:
             adjustment = _vatinc_roundup_adjustment(item, price, Decimal("1.00"))

@@ -216,6 +216,10 @@ class InvoiceLineForm(forms.Form):
         if self.cp and self.priceband:
             return self.cp.price(self.priceband)
         return ""
+    def priceincvat(self):
+        if self.cp and self.priceband:
+            return self.cp.priceincvat(self.priceband)
+        return ""
     def account(self):
         if self.cp:
             return self.cp.product.account
@@ -333,6 +337,9 @@ class InvoiceItem:
         self._fetch_price(priceband)
         return (self._pricebands[priceband][0] * self.barrels)\
             .quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    def priceincvat(self, priceband):
+        return (self.price(priceband) * settings.VAT_MULTIPLIER)\
+            .quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 itemre = re.compile(r'^(?P<qty>\d+)\s*(?P<unit>[\w]+?( keg)?)s?\s+(?P<product>[\w\s]+)$')
 
@@ -389,6 +396,7 @@ def item_details(request):
         'barrels': '',
         'barrelprice': '',
         'total': '',
+        'incvat': '',
         'account': '',
         'error': '',
         }
@@ -418,6 +426,7 @@ def item_details(request):
              "reasons": i.pricereasons(priceband),
             }),
         'total': i.price(priceband),
+        'incvat': i.priceincvat(priceband),
         'account': i.product.account,
         'error': "(Not saved)",
     }

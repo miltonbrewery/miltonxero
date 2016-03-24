@@ -15,6 +15,7 @@
     document.getElementById(basename+"-barrels").innerHTML = response['barrels'];
     document.getElementById(basename+"-barrelprice").innerHTML = response['barrelprice'];
     document.getElementById(basename+"-total").innerHTML = response['total'];
+    document.getElementById(basename+"-incvat").innerHTML = response['incvat'];
     document.getElementById(basename+"-account").innerHTML = response['account'];
     document.getElementById(basename+"-error").innerHTML = response['error'];
   };
@@ -50,6 +51,7 @@
 	<th>Barrels</th>
 	<th>Price/barrel</th>
 	<th>Total</th>
+	<th>Total inc VAT</th>
 	<th>Account</th>
 	<th></th>
       </tr>
@@ -79,6 +81,7 @@
 	  {% include "invoicer/pricedetail.html" with price=form.barrelprice reasons=form.barrelreasons %}
 	</td>
 	<td id="{{form.item.html_name}}-total" class="price">{{form.totalprice}}</td>
+	<td id="{{form.item.html_name}}-incvat" class="price">{{form.priceincvat}}</td>
 	<td id="{{form.item.html_name}}-account">{{form.account}}</td>
 	<td id="{{form.item.html_name}}-error" class="error">{% for e in form.non_field_errors %}{{e}}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
       </tr>
