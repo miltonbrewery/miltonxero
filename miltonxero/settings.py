@@ -55,6 +55,7 @@ ROOT_URLCONF = 'miltonxero.urls'
 
 WSGI_APPLICATION = 'miltonxero.wsgi.application'
 
+LOGIN_URL = '/admin/login/'
 
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases

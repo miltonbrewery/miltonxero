@@ -8,6 +8,7 @@ from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.template.loader import render_to_string
+from django.contrib.auth.decorators import login_required
 from invoicer.models import *
 from invoicer import xero
 from decimal import Decimal, ROUND_HALF_UP
@@ -66,6 +67,7 @@ def _csv_to_priceband(band, cd):
         else:
             ConfigOption(band=band, name=row[0], value=row[1]).save()
 
+@login_required
 def priceband(request, bandid):
     """Information on a price band, and option to upload new data"""
     try:
@@ -116,6 +118,7 @@ def priceband(request, bandid):
 class ChooseContactForm(forms.Form):
     name = forms.CharField(label="Contact name", max_length=500)
 
+@login_required
 def startinvoice(request):
     pricebands = PriceBand.objects.all()
     ptypes = ProductType.objects.all()
@@ -233,6 +236,7 @@ class BaseInvoiceLineFormSet(forms.BaseFormSet):
 InvoiceLineFormSet = forms.formset_factory(
     InvoiceLineForm, formset=BaseInvoiceLineFormSet, extra=5, can_delete=True)
 
+@login_required
 def invoice(request, contactid):
     try:
         contact_extra = Contact.objects.get(xero_id=contactid)
@@ -296,6 +300,7 @@ def invoice(request, contactid):
                    "cform": cform,
                    "iform": iform})
 
+@login_required
 def contact_completions(request):
     q = request.GET['q']
     l = xero.get_contacts(q, use_contains=True)
@@ -368,6 +373,7 @@ def parse_item(description, exactmatch=False):
     l.sort(key=lambda item:item.product.swap)
     return l
 
+@login_required
 def item_completions(request):
     try:
         q = request.GET['q']
@@ -376,6 +382,7 @@ def item_completions(request):
     l = parse_item(q)
     return JsonResponse([str(i) for i in l], safe=False)
 
+@login_required
 def item_details(request):
     d = {
         'abv': '',
