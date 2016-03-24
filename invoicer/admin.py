@@ -13,8 +13,12 @@ class ProductAdmin(admin.ModelAdmin):
     ordering = ('name', )
     inlines = [OverrideInline]
 
+class ConfigOptionAdmin(admin.ModelAdmin):
+    list_display = ('band', 'name', 'value')
+    list_filter = ('band', )
+
 admin.site.register(PriceBand)
-admin.site.register(ConfigOption)
+admin.site.register(ConfigOption, ConfigOptionAdmin)
 admin.site.register(Contact)
 admin.site.register(ProductType)
 admin.site.register(Product, ProductAdmin)
