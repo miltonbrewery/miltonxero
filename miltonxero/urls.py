@@ -1,5 +1,6 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
+admin.site.site_header = 'Milton Invoice Tool'
 
 urlpatterns = patterns(
     '',
