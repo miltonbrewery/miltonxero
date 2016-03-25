@@ -431,3 +431,74 @@ def item_details(request):
         'error': "(Not saved)",
     }
     return JsonResponse(d)
+
+class ProductForm(forms.Form):
+    code = forms.CharField(max_length=30)
+    name = forms.CharField(max_length=80)
+    abv = forms.DecimalField(max_digits=3, decimal_places=1)
+    type = forms.ModelChoiceField(queryset=ProductType.objects)
+    swap = forms.BooleanField(required=False)
+
+@login_required
+def product(request, productid=None):
+    product = None
+    if productid:
+        try:
+            product = Product.objects.get(pk=int(productid))
+        except Product.DoesNotExist:
+            raise Http404
+    if request.method == 'POST':
+        form = ProductForm(request.POST)
+        if form.is_valid():
+            return HttpResponseRedirect("")
+    else:
+        form = ProductForm()
+    return render(request, 'invoicer/product.html',
+                  {'product': product, 'form': form})
+
+@login_required
+def productcode_check(request):
+    try:
+        q = request.GET['q']
+        productid = int(request.GET.get('p', 0))
+    except:
+        return JsonResponse({'ok': False, 'error': 'Bad parameters'})
+
+    product = None
+    if productid:
+        try:
+            product = Product.objects.get(pk=productid)
+        except Product.DoesNotExist:
+            return JsonResponse(
+                {'ok': False,
+                 'error': 'Product {} does not exist'.format(productid)})
+    if product and q == product.code:
+        return JsonResponse(
+            {'ok': True,
+             'error': 'Unchanged'})
+    try:
+        np = Product.objects.get(code=q)
+        return JsonResponse(
+            {'ok': False,
+             'error': 'In use for {}'.format(product.name)})
+    except Product.DoesNotExist:
+        pass
+    c = xero.check_product_code(q)
+    if c:
+        return JsonResponse(
+            {'ok': False,
+             'error': 'In use on Xero for {}'.format(c)})
+    return JsonResponse({'ok': True, 'error': 'Available'})
+
+@login_required
+def productname_check(request):
+    try:
+        q = request.GET['q']
+    except:
+        return JsonResponse({'ok': False, 'error': 'Bad parameters'})
+    try:
+        product = Product.objects.get(name=q)
+        return JsonResponse({'ok': False, 'error': 'Already exists'})
+    except Product.DoesNotExist:
+        pass
+    return JsonResponse({'ok': True, 'error': 'Ok'})

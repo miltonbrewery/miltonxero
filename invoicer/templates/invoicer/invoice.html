@@ -38,7 +38,7 @@
     });
   };
 </script>
-<form method="POST">{% csrf_token %}
+<form method="POST" id="invoiceform">{% csrf_token %}
   {{cform.as_p}}
   {{iform.management_form}}
   <table class="invoiceitems">

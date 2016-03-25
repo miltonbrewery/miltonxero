@@ -142,6 +142,8 @@ class Product(models.Model):
     abv = models.DecimalField(max_digits=3, decimal_places=1)
     type = models.ForeignKey(ProductType)
     swap = models.BooleanField(default=True)
+    sent = models.BooleanField(default=False, help_text="Has this product code"
+                               "been sent to Xero yet?")
     def __str__(self):
         # This is used as the Xero item description
         return "{} ({}% ABV)".format(self.name,self.abv)

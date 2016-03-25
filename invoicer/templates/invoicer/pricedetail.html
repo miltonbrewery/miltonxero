@@ -1,5 +1,5 @@
 {% if price != "" %}
-<a href="#" class="help_link" tabindex="-1">{{price}}</a>
+<a href="/" class="help_link" tabindex="-1" onClick="javascript:document.getElementById('invoiceform').submit()">{{price}}</a>
 <div class="help">
   {% if reasons %}
   <table class="pricereason">

@@ -70,7 +70,7 @@
       {% for o in overrides %}
       <tr>
 	<td><a href="{% url "admin:invoicer_product_change" o.product.pk %}">{{o.product}}</a></td>
-	<td>{{o.price}}</td>
+	<td>{{o.pricechange}}</td>
       </tr>
       {% endfor %}
     </tbody>

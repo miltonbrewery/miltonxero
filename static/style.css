@@ -4,6 +4,11 @@ body {
     font-family: sans-serif;
 }
 
+.accordion-wrapper {
+    display: inline-block;
+    width: 40em;
+}
+
 .logo {
     float: right;
 }
