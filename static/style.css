@@ -1,3 +1,20 @@
+@charset "UTF-8";
+
+body {
+    font-family: sans-serif;
+}
+
+.logo {
+    float: right;
+}
+
+.helptext {
+    display: block;
+    font-size: 0.75em;
+    color: #808080;
+    margin-left: 7em;
+}
+
 .help {
     background-color: #FFFF73;
     border-radius: 10px;
@@ -14,10 +31,15 @@
 
 table.pricereason {
     text-align: left;
+    padding: 2px;
+}
+table.pricereason td {
+    border: none;
+    padding: 2px;
 }
 
 td.invoiceitem input {
-    width: 30em;
+    width: 25em;
 }
 
 td.price {
@@ -30,4 +52,23 @@ td.price {
 
 td.deletebutton {
     text-align: center;
+}
+
+.invoiceitems {
+    margin: 20px;
+    padding: 20px;
+    border: 1px solid grey;
+    border-collapse: collapse;
+    border-radius: 10px;
+    clear: right;
+}
+
+.invoiceitems th {
+    padding: 10px;
+}
+
+.invoiceitems td {
+    border: 1px solid grey;
+    border-width: 1px;
+    padding: 4px;
 }

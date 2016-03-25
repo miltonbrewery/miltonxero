@@ -1,11 +1,19 @@
 {% extends "base.html" %}
-{% block title %}{{band.name}}{% endblock %}
+{% block title %}{{band.name}} price band{% endblock %}
 {% block body %}
-<h1>{{band.name}}</h1>
+<h1>{{band.name}} price band</h1>
 
+<p><a href="{% url "admin:invoicer_priceband_change" band.pk %}">Rename / delete</a></p>
+
+<div id="tabs">
+  <ul>
+    {% if abvs %}<li><a href="#pricetable">Base prices</a></li>{% endif %}
+    {% if configs %}<li><a href="#configs">Config variables</a></li>{% endif %}
+    {% if overrides %}<li><a href="#adjustments">Price adjustments</a></li>{% endif %}
+    <li><a href="#upload">Upload new table</a></li>
+  </ul>
 {% if abvs %}
-<div name="pricetable">
-  <h2>Base price table</h2>
+<div id="pricetable" name="pricetable">
   <table>
     <thead>
       <tr>
@@ -29,8 +37,7 @@
 {% endif %}
 
 {% if configs %}
-<div name="configs">
-  <h2>Configuration variables</h2>
+<div name="configs" id="configs">
   <table>
     <thead>
       <tr>
@@ -51,8 +58,7 @@
 {% endif %}
 
 {% if overrides %}
-<div name="overrides">
-  <h2>Price adjustments</h2>
+<div name="adjustments" id="adjustments">
   <table>
     <thead>
       <tr>
@@ -72,8 +78,7 @@
 </div>
 {% endif %}
 
-<section>
-  <h2>Upload new table</h2>
+<div id="upload">
   <form enctype="multipart/form-data" method="post">{% csrf_token %}
     {{form.as_p}}
     <input type="submit" name="update" value="Update price band">
@@ -95,6 +100,13 @@
     variable.  The second column is used as the value of the
     configuration variable.  Other columns are ignored.</dt>
   </dl>
-</section>
+</div>
+</div>
+<script type="text/javascript">
+  $(function() {
+    $("#tabs").tabs({
+      collapsible: true});
+  });
+</script>
 
 {% endblock %}

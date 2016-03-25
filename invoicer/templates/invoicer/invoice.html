@@ -6,6 +6,7 @@
 {% endblock %}
 {% block title %}Create invoice{% endblock %}
 {% block body %}
+<img src="{% static "milton.png" %}" class="logo">
 <h1>Invoice for {{contactname}}</h1>
 <script type="text/javascript">
   var autocompletes = new Array();
@@ -44,14 +45,14 @@
     <thead>
       <tr>
 	{% if iform.can_delete %}
-	<th>Delete?</th>
+	<th>Del</th>
 	{% endif %}
 	<th>Item</th>
 	<th>ABV</th>
 	<th>Barrels</th>
 	<th>Price/barrel</th>
-	<th>Total</th>
-	<th>Total inc VAT</th>
+	<th>Total ex&nbsp;VAT</th>
+	<th>Total inc&nbsp;VAT</th>
 	<th>Account</th>
 	<th></th>
       </tr>
@@ -99,4 +100,7 @@
 
 <p><a href="{% url "invoicer.views.startinvoice" %}">Choose another
     contact</a></p>
+<p class="helptext">Hint: You can bookmark this page if you regularly
+send invoices to this customer.</p>
+
 {% endblock %}
