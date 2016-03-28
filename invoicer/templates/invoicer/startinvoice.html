@@ -35,8 +35,9 @@ contact.  (Contacts cannot be removed once added.)</a></p>
   </div>
   <h3>Maintenance options</h3>
   <div>
-    <p><a href="{% url "admin:invoicer_product_changelist" %}">Add,
-edit or remove products.</a></p>
+    <p><a href="{% url "invoicer.views.product" %}"
+    target="_blank">Add a product</a></p>
+    <p><a href="{% url "admin:invoicer_product_changelist" %}">Edit or remove products</a></p>
 
     {% if bands %}
     <p>View or update a price band:</p>
@@ -48,7 +49,9 @@ edit or remove products.</a></p>
     {% endif %}
 
     <p><a href="{% url "admin:invoicer_priceband_changelist" %}">Add
-    or remove price bands.</a></p>
+	or remove price bands</a></p>
+
+    <p><a href="{% url "admin:index" %}">Other maintenance options</a></p>
   </div>
 </div>
 </div>
