@@ -5,7 +5,7 @@
 
 <p><a href="{% url "admin:invoicer_priceband_change" band.pk %}">Rename / delete</a> - <a href="/">Back</a></p>
 
-<div id="tabs">
+<div id="tabs" style="clear: both;">
   <ul>
     {% if abvs %}<li><a href="#pricetable">Base prices</a></li>{% endif %}
     {% if configs %}<li><a href="#configs">Config variables</a></li>{% endif %}

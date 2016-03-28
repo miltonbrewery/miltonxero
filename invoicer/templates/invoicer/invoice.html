@@ -4,9 +4,8 @@
 <script type="text/javascript" src="{% static "auto-complete.js" %}"></script>
 <link rel="STYLESHEET" type="text/css" href="{% static "auto-complete.css" %}">
 {% endblock %}
-{% block title %}Create invoice{% endblock %}
+{% block title %}{{contactname}} invoice{% endblock %}
 {% block body %}
-<img src="{% static "milton.png" %}" class="logo">
 <h1>Invoice for {{contactname}}</h1>
 <script type="text/javascript">
   var autocompletes = new Array();
