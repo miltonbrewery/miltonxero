@@ -40,7 +40,11 @@ table.pricereason {
 }
 table.pricereason td {
     border: none;
-    padding: 2px;
+    text-align: left !important;
+    padding: 2px !important;
+}
+table.pricereason td.price {
+    text-align: right !important;
 }
 
 td.invoiceitem input {
@@ -76,4 +80,33 @@ td.deletebutton {
     border: 1px solid grey;
     border-width: 1px;
     padding: 4px;
+}
+
+table.productprices {
+    border: 1px solid grey;
+    border-collapse: collapse;
+    margin: 20px;
+}
+
+table.productprices td {
+    text-align: right;
+    padding: 8px;
+}
+
+table.productprices th {
+    padding: 8px;
+}
+
+table.productprices tbody {
+    border: 1px solid grey;
+}
+
+
+table.productprices col.priceband {
+    border: 1px solid grey;
+    padding: 4px;
+}
+
+table.kvtable th {
+    text-align: right;
 }

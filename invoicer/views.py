@@ -208,19 +208,19 @@ class InvoiceLineForm(forms.Form):
         return self.cp.barrels if self.cp else ""
     def barrelprice(self):
         if self.cp and self.priceband:
-            return self.cp.priceperbarrel(self.priceband)
+            return self.cp[self.priceband].priceperbarrel
         return ""
     def barrelreasons(self):
         if self.cp and self.priceband:
-            return self.cp.pricereasons(self.priceband)
+            return self.cp[self.priceband].reasons
         return []
     def totalprice(self):
         if self.cp and self.priceband:
-            return self.cp.price(self.priceband)
+            return self.cp[self.priceband].price
         return ""
     def priceincvat(self):
         if self.cp and self.priceband:
-            return self.cp.priceincvat(self.priceband)
+            return self.cp[self.priceband].priceincvat
         return ""
     def account(self):
         if self.cp:
@@ -312,36 +312,32 @@ def contact_completions(request):
     l = xero.get_contacts(q, use_contains=True)
     return JsonResponse([x["Name"] for x in l], safe=False)
 
+class InvoiceItemBand:
+    def __init__(self, item, priceband):
+        self.priceperbarrel, self.reasons = priceband.price_for(item)
+        self.price = (self.priceperbarrel * item.barrels)\
+            .quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        self.priceincvat = (self.price * settings.VAT_MULTIPLIER)\
+            .quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        
 class InvoiceItem:
-    def __init__(self, items, unitname, barrels, producttype, flags, product):
+    def __init__(self, items, unit, product):
         self.items = items
-        self.unitname = unitname
-        self.barrelsperitem = barrels
-        self.barrels = barrels * items
-        self.producttype = producttype
-        self.flags = flags
+        self.unitname = unit.name
+        self.barrelsperitem = unit.size
+        self.barrels = unit.size * items
+        self.producttype = unit.type
+        self.flags = unit.flags
         self.product = product
-        self._pricebands = {}
+        self._bands = {}
     def __str__(self):
         return "{} {}{} {}".format(
             self.items, self.unitname, "s" if self.items > 1 else "",
             self.product.name)
-    def _fetch_price(self, priceband):
-        if priceband not in self._pricebands:
-            self._pricebands[priceband] = priceband.price_for(self)
-    def priceperbarrel(self, priceband):
-        self._fetch_price(priceband)
-        return self._pricebands[priceband][0]
-    def pricereasons(self, priceband):
-        self._fetch_price(priceband)
-        return self._pricebands[priceband][1]
-    def price(self, priceband):
-        self._fetch_price(priceband)
-        return (self._pricebands[priceband][0] * self.barrels)\
-            .quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    def priceincvat(self, priceband):
-        return (self.price(priceband) * settings.VAT_MULTIPLIER)\
-            .quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    def __getitem__(self, key):
+        if key not in self._bands:
+            self._bands[key] = InvoiceItemBand(self, key)
+        return self._bands[key]
 
 itemre = re.compile(r'^(?P<qty>\d+)\s*(?P<unit>[\w]+?( keg)?)s?\s+(?P<product>[\w\s]+)$')
 
@@ -360,8 +356,9 @@ def parse_item(description, exactmatch=False):
 
     # Find all matching units
     mu = []
-    for k in settings.PRODUCT_UNITS:
-        if k[0].startswith(unitname):
+    units = Unit.objects.all()
+    for k in units:
+        if k.name.startswith(unitname):
             mu.append(k)
 
     # For each matching unit, search for matching products.  A product
@@ -372,13 +369,13 @@ def parse_item(description, exactmatch=False):
         productfilter = Q(name=product)
     else:
         productfilter = Q(name__icontains=product) | Q(code__icontains=product)
-    for name, barrels, producttype, flags in mu:
+    for unit in mu:
         products = Product.objects\
-                          .filter(type__name=producttype)\
+                          .filter(type=unit.type)\
                           .filter(productfilter)\
                           .all()
         for p in products:
-            l.append(InvoiceItem(items, name, barrels, producttype, flags, p))
+            l.append(InvoiceItem(items, unit, p))
     l.sort(key=lambda item:item.product.swap)
     return l
 
@@ -424,12 +421,12 @@ def item_details(request):
         'barrels': i.barrels,
         'barrelprice': render_to_string(
             "invoicer/pricedetail.html",
-            {"price": i.priceperbarrel(priceband),
-             "reasons": i.pricereasons(priceband),
+            {"price": i[priceband].priceperbarrel,
+             "reasons": i[priceband].reasons,
              "product": i.product,
             }),
-        'total': i.price(priceband),
-        'incvat': i.priceincvat(priceband),
+        'total': i[priceband].price,
+        'incvat': i[priceband].priceincvat,
         'account': i.product.account,
         'error': "(Not saved)",
     }
@@ -475,10 +472,20 @@ def product(request, productid=None):
     else:
         form = ProductForm(instance=product)
     # Table has price band across the top, relevant units down the left
-    #bands = PriceBand.objects.all()
-    #units = [x if x[2] == product.type.name for x in settings.PRODUCT_UNITS]
+    if product:
+        bands = PriceBand.objects.all()
+        units = [InvoiceItem(1, x, product)
+                 for x in Unit.objects.filter(type=product.type).all()]
+        # XXX this works around the inability of the Django template system
+        # to perform dictionary lookups based on variables
+        for u in units:
+            u.bandinfo = [u[b] for b in bands]
+    else:
+        bands = []
+        units = []
     return render(request, 'invoicer/product.html',
-                  {'product': product, 'form': form})
+                  {'product': product, 'form': form,
+                   'bands': bands, 'units': units})
 
 @login_required
 def productcode_check(request):

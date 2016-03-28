@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e
+
+tmpfile=/tmp/miltonxero-snarf-$$
+
+ssh miltonxero@bag.assorted.org.uk "pg_dump miltonxero | gzip -9" > ${tmpfile}.gz
+gzip -d ${tmpfile}.gz
+dropdb miltonxero
+createdb miltonxero
+psql miltonxero <${tmpfile}
+rm -f ${tmpfile}

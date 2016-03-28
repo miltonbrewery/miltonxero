@@ -8,11 +8,55 @@
 {% endif %}
 
 <form method="post">{% csrf_token %}
-  <table>
+  <table class="kvtable">
     {{form.as_table}}
   </table>
   <input type="submit" name="send" value="{% if product %}Update{% else %}Create{% endif %}">
 </form>
+
+{% if product %}
+<table class="productprices">
+  <colgroup>
+    <col>
+    {% for b in bands %}
+    <col span="2" class="priceband">
+    {% endfor %}
+  </colgroup>
+  <thead>
+    <tr>
+      <th></th>
+      {% for b in bands %}
+      <th colspan="2">{{b.name}}</th>
+      {% endfor %}
+    </tr>
+    <tr>
+      <th></th>
+      {% for b in bands %}
+      <th>ex VAT</th><th>inc VAT</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in units %}
+    <tr>
+      <th>{{u.unitname}}</th>
+      {% for b in u.bandinfo %}
+      <td><a href="#" class="help_link">{{b.price}}</a>
+	<div class="help">
+	  <table class="pricereason">
+	    {% for r, p in b.reasons %}
+	    <tr><td>{{r}}</td><td class="price">{{p}}</td></tr>
+	    {% endfor %}
+	  </table>
+	</div>
+      </td>
+      <td>{{b.priceincvat}}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
 
 <p><a href="#" onClick="javascript:window.close();">Close</a></p>
 
