@@ -79,7 +79,7 @@
 	<td id="{{form.item.html_name}}-abv">{{form.abv}}</td>
 	<td id="{{form.item.html_name}}-barrels">{{form.barrels}}</td>
 	<td id="{{form.item.html_name}}-barrelprice" class="price">
-	  {% include "invoicer/pricedetail.html" with price=form.barrelprice reasons=form.barrelreasons %}
+	  {% include "invoicer/pricedetail.html" with price=form.barrelprice reasons=form.barrelreasons product=form.product %}
 	</td>
 	<td id="{{form.item.html_name}}-total" class="price">{{form.totalprice}}</td>
 	<td id="{{form.item.html_name}}-incvat" class="price">{{form.priceincvat}}</td>

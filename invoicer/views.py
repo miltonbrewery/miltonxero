@@ -200,6 +200,8 @@ class InvoiceLineForm(forms.Form):
         if len(l) > 1:
             raise forms.ValidationError("Ambiguous invoice line")
         self.cp = l[0]
+    def product(self):
+        return self.cp.product if self.cp else ""
     def abv(self):
         return str(self.cp.product.abv)+"%" if self.cp else ""
     def barrels(self):
@@ -424,6 +426,7 @@ def item_details(request):
             "invoicer/pricedetail.html",
             {"price": i.priceperbarrel(priceband),
              "reasons": i.pricereasons(priceband),
+             "product": i.product,
             }),
         'total': i.price(priceband),
         'incvat': i.priceincvat(priceband),
@@ -432,12 +435,21 @@ def item_details(request):
     }
     return JsonResponse(d)
 
-class ProductForm(forms.Form):
-    code = forms.CharField(max_length=30)
-    name = forms.CharField(max_length=80)
-    abv = forms.DecimalField(max_digits=3, decimal_places=1)
-    type = forms.ModelChoiceField(queryset=ProductType.objects)
-    swap = forms.BooleanField(required=False)
+class ProductForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = ['code', 'name', 'abv', 'type', 'swap']
+    def clean(self):
+        cleaned_data = super(ProductForm, self).clean()
+        code = cleaned_data.get("code")
+        # We validate the code if there's no existing product or if
+        # the code has changed
+        if not (self.instance and code == self.instance.code):
+            xero_match = xero.get_product(code)
+            if xero_match:
+                raise forms.ValidationError(
+                    "Code {} already exists in Xero for {}".format(
+                        code, xero_match))
 
 @login_required
 def product(request, productid=None):
@@ -448,11 +460,23 @@ def product(request, productid=None):
         except Product.DoesNotExist:
             raise Http404
     if request.method == 'POST':
-        form = ProductForm(request.POST)
+        form = ProductForm(request.POST, instance=product)
         if form.is_valid():
-            return HttpResponseRedirect("")
+            o = form.save(commit=False)
+            if "code" in form.changed_data or "name" in form.changed_data \
+               or "abv" in form.changed_data:
+                if o.sent:
+                    o.sent = False
+                    messages.warning(request, "Product will be re-sent to Xero "
+                                     "next time it is used in an invoice")
+            o.save()
+            messages.success(request, "Product updated")
+            return HttpResponseRedirect(o.get_absolute_url())
     else:
-        form = ProductForm()
+        form = ProductForm(instance=product)
+    # Table has price band across the top, relevant units down the left
+    #bands = PriceBand.objects.all()
+    #units = [x if x[2] == product.type.name for x in settings.PRODUCT_UNITS]
     return render(request, 'invoicer/product.html',
                   {'product': product, 'form': form})
 

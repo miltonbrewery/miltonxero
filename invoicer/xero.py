@@ -69,6 +69,19 @@ def get_contact(contactid):
         return
     return _contact_to_dict(c)
 
+def get_product(code):
+    r = requests.get(XERO_ENDPOINT_URL + "Items/" + code, auth=oauth)
+    if r.status_code != 200:
+        return
+    root = fromstring(r.text)
+    if root.tag != "Response":
+        return
+    i = root.find("./Items/Item")
+    if not i:
+        raise Problem("Response did not contain item details")
+    desc = _fieldtext(i, "Description")
+    return desc
+
 def update_products(products):
     items = Element("Items")
     for p in products:

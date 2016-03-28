@@ -136,6 +136,17 @@ class ProductType(models.Model):
     def __str__(self):
         return self.name
 
+class Unit(models.Model):
+    """A unit in which products are sold"""
+    name = models.CharField(max_length=10, help_text="Unit names with spaces "
+                            "in may require code changes to work")
+    size = models.DecimalField(max_digits=5, decimal_places=4,
+                               help_text="Size in barrels")
+    type = models.ForeignKey(ProductType)
+    flags = models.CharField(max_length=50, blank=True)
+    def __str__(self):
+        return self.name
+
 class Product(models.Model):
     code = models.CharField(max_length=30, unique=True) # xero max is 30
     name = models.CharField(max_length=80, unique=True)
@@ -152,6 +163,9 @@ class Product(models.Model):
         return settings.SWAP_ACCOUNT if self.swap else settings.DEFAULT_ACCOUNT
     class Meta:
         ordering = ['name']
+    @models.permalink
+    def get_absolute_url(self):
+        return ('invoicer.views.product',[self.pk])
 
 class Price(models.Model):
     """A regular price for a band/type/abv combination"""
