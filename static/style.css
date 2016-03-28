@@ -4,6 +4,15 @@ body {
     font-family: sans-serif;
 }
 
+.messages {
+    display: inline-block;
+    width: 100%;
+    background-color: #FFFF73;
+}
+.messages ul {
+    list-style-type: none;
+}
+
 .accordion-wrapper {
     display: inline-block;
     width: 40em;
