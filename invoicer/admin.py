@@ -8,7 +8,7 @@ class OverrideInline(admin.TabularInline):
 
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('code', 'name', 'abv', 'type', 'swap')
-    list_filter = ('swap', )
+    list_filter = ('swap', 'sent')
     search_fields = ('code', 'name')
     ordering = ('name', )
     inlines = [OverrideInline]

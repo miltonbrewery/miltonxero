@@ -115,7 +115,7 @@ def send_invoice(contactid, priceband, items, override_account=None):
         li.append(_textelem("Quantity", str(i.barrels)))
         li.append(_textelem("AccountCode",
                             override_account or i.product.account))
-        li.append(_textelem("UnitAmount", str(i.priceperbarrel(priceband))))
+        li.append(_textelem("UnitAmount", str(i[priceband].priceperbarrel)))
     xml = tostring(invoices)
     r = requests.put(XERO_ENDPOINT_URL + "Invoices/",
                      data={'xml': xml},

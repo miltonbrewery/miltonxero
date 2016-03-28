@@ -164,13 +164,18 @@ def _send_to_xero(contactid, contact_extra, lines):
             raise _XeroSendFailure(
                 "Ambiguous invoice item '{}'".format(l))
         item = il[0]
-        products.add(item.product)
+        if not item.product.sent:
+            products.add(item.product)
         invitems.append(item)
 
-    problem = xero.update_products(products)
-    if problem:
-        raise _XeroSendFailure("Received {} response when sending product "
-                               "details to Xero".format(problem))
+    if products:
+        problem = xero.update_products(products)
+        if problem:
+            raise _XeroSendFailure("Received {} response when sending product "
+                                   "details to Xero".format(problem))
+        for p in products:
+            p.sent = True
+            p.save()
 
     try:
         invid, warnings = xero.send_invoice(
@@ -514,7 +519,7 @@ def productcode_check(request):
              'error': 'In use for {}'.format(product.name)})
     except Product.DoesNotExist:
         pass
-    c = xero.check_product_code(q)
+    c = xero.get_product(q)
     if c:
         return JsonResponse(
             {'ok': False,

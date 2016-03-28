@@ -98,19 +98,8 @@ XERO_CONSUMER_KEY = read("consumer-key")
 
 XERO_PRIVATE_KEY = read("private-key")
 
-# List of (unit name, barrels, producttype, flags)
-from decimal import Decimal
-PRODUCT_UNITS = [
-    ('pin', Decimal("0.125"), "Cask Ale", ["vat-roundup-50p"]),
-    ('polypin', Decimal("0.125"), "Cask Ale", []),
-    ('firkin', Decimal("0.25"), "Cask Ale", []),
-    ('kil', Decimal("0.5"), "Cask Ale", []),
-    ('barrel', Decimal("1.0"), "Cask Ale", []),
-    ('30l keg', Decimal("0.1833"), "Craft Keg", []),
-    ('50l keg', Decimal("0.3055"), "Craft Keg", []),
-]
-
 # Current VAT multiplier
+from decimal import Decimal
 VAT_MULTIPLIER = Decimal("1.20")
 
 DEFAULT_ACCOUNT = "40000"
