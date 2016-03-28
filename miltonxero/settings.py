@@ -102,7 +102,7 @@ XERO_PRIVATE_KEY = read("private-key")
 from decimal import Decimal
 PRODUCT_UNITS = [
     ('pin', Decimal("0.125"), "Cask Ale", ["vat-roundup-50p"]),
-    ('polypin', Decimal("0.125"), "Cask Ale", ["vat-roundup-pound"]),
+    ('polypin', Decimal("0.125"), "Cask Ale", []),
     ('firkin', Decimal("0.25"), "Cask Ale", []),
     ('kil', Decimal("0.5"), "Cask Ale", []),
     ('barrel', Decimal("1.0"), "Cask Ale", []),
