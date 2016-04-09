@@ -386,6 +386,9 @@ def parse_item(description, exactmatch=False):
         for p in products:
             l.append(InvoiceItem(items, unit, p))
     l.sort(key=lambda item:item.product.swap)
+    # If the product name entered matches (case-insensitive) the
+    # product code, sort this to the top
+    l.sort(key=lambda item:item.product.code.lower() != product.lower())
     return l
 
 @login_required
