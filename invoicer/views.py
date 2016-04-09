@@ -280,7 +280,7 @@ def invoice(request, contactid):
             contact_extra.save()
             request.session[contactid] = [
                 i for i in iform.cleaned_data if not i.get('DELETE',True)]
-            if "send" in request.POST:
+            if "send" in request.POST or "send-background" in request.POST:
                 try:
                     invid, warnings = _send_to_xero(
                         contactid, contact_extra, request.session[contactid])
@@ -289,9 +289,13 @@ def invoice(request, contactid):
                         return render(request, 'invoicer/invoicewarnings.html',
                                       {"invid": invid,
                                        "warnings": warnings})
-                    return HttpResponseRedirect(
-                        "https://go.xero.com/AccountsReceivable/"
-                        "Edit.aspx?InvoiceID=" + invid)
+                    if "send" in request.POST:
+                        return HttpResponseRedirect(
+                            "https://go.xero.com/AccountsReceivable/"
+                            "Edit.aspx?InvoiceID=" + invid)
+                    messages.success(
+                        request,"Invoice for {} sent to Xero".format(contactname))
+                    return HttpResponseRedirect(reverse(startinvoice))
                 except _XeroSendFailure as e:
                     messages.error(request, e.message)
             return HttpResponseRedirect("")
