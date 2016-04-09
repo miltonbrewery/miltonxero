@@ -349,20 +349,26 @@ class InvoiceItem:
         return self._bands[key]
 
 itemre = re.compile(r'^(?P<qty>\d+)\s*(?P<unit>[\w]+?( keg)?)s?\s+(?P<product>[\w\s&-]+)$')
+shortre = re.compile(r'^(?P<qty>\d+)\s*(?P<product>[\w\s&-]+)$')
 
 def parse_item(description, exactmatch=False):
     """Convert an item description to a list of InvoiceItem objects
     """
+    items = 0
+    unitname = ""
+    product = ""
     m = itemre.match(description)
-    if not m:
-        return []
-
-    items = int(m.group('qty'))
-    unitname = m.group('unit')
-    product = m.group('product')
+    if m:
+        items = int(m.group('qty'))
+        unitname = m.group('unit')
+        product = m.group('product')
+    else:
+        m = shortre.match(description)
+        if m and not exactmatch:
+            items = int(m.group('qty'))
+            product = m.group('product')
     if items < 1 or len(product) < 2:
         return []
-
     # Find all matching units
     mu = []
     units = Unit.objects.all()
