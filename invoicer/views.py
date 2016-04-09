@@ -123,22 +123,35 @@ def startinvoice(request):
     pricebands = PriceBand.objects.all()
     ptypes = ProductType.objects.all()
     if request.method == "POST":
-        form = ChooseContactForm(request.POST)
-        if form.is_valid():
-            contacts = xero.get_contacts(form.cleaned_data['name'])
+        iform = ChooseContactForm(request.POST, prefix="invoice")
+        bform = ChooseContactForm(request.POST, prefix="bill")
+        if iform.is_valid():
+            contacts = xero.get_contacts(iform.cleaned_data['name'])
             if not contacts:
-                form.add_error('name', "No contact exists with this name")
+                iform.add_error('name', "No contact exists with this name")
             elif len(contacts) == 1:
                 return HttpResponseRedirect(
-                    reverse(invoice, args=[contacts[0]["ContactID"]]))
+                    reverse("invoice", args=[contacts[0]["ContactID"]]))
+            else:
+                return render(request, 'invoicer/multicontact.html',
+                              {"contacts": contacts})
+        if bform.is_valid():
+            contacts = xero.get_contacts(bform.cleaned_data['name'])
+            if not contacts:
+                bform.add_error('name', "No contact exists with this name")
+            elif len(contacts) == 1:
+                return HttpResponseRedirect(
+                    reverse("bill", args=[contacts[0]["ContactID"]]))
             else:
                 return render(request, 'invoicer/multicontact.html',
                               {"contacts": contacts})
     else:
-        form = ChooseContactForm()
+        iform = ChooseContactForm(prefix="invoice")
+        bform = ChooseContactForm(prefix="bill")
 
     return render(request, 'invoicer/startinvoice.html',
-                  {"form": form,
+                  {"iform": iform,
+                   "bform": bform,
                    "bands": pricebands,
                    "ptypes": ptypes})
 
@@ -155,7 +168,7 @@ class _XeroSendFailure(Exception):
     def __init__(self, message):
         self.message = message
 
-def _send_to_xero(contactid, contact_extra, lines):
+def _send_to_xero(contactid, contact_extra, lines, bill):
     products = set()
     invitems = []
     for l in lines:
@@ -180,9 +193,9 @@ def _send_to_xero(contactid, contact_extra, lines):
     try:
         invid, warnings = xero.send_invoice(
             contactid, contact_extra.priceband, invitems,
-            override_account=contact_extra.account)
+            settings.BILL_ACCOUNT if bill else contact_extra.account, bill)
     except xero.Problem as e:
-        raise _XeroSendFailure("Failed sending invoice to Xero: {}".format(
+        raise _XeroSendFailure("Failed sending to Xero: {}".format(
             e.message))
     return invid, warnings
 
@@ -248,7 +261,7 @@ InvoiceLineFormSet = forms.formset_factory(
     InvoiceLineForm, formset=BaseInvoiceLineFormSet, extra=5, can_delete=True)
 
 @login_required
-def invoice(request, contactid):
+def invoice(request, contactid, bill=False):
     try:
         contact_extra = Contact.objects.get(xero_id=contactid)
     except Contact.DoesNotExist:
@@ -263,13 +276,17 @@ def invoice(request, contactid):
         contactname = contact['Name']
     else:
         contactname = contact_extra.name
+    if bill:
+        storename = contactid + "-bill"
+    else:
+        storename = contactid
     if request.method == "POST":
         cform = ContactOptionsForm(request.POST)
         priceband = None
         if cform.is_valid():
             priceband = cform.cleaned_data['priceband']
         iform = InvoiceLineFormSet(priceband, request.POST,
-                                   initial=request.session.get(contactid))
+                                   initial=request.session.get(storename))
         if cform.is_valid() and iform.is_valid():
             if not contact_extra:
                 contact_extra = Contact(xero_id=contactid)
@@ -278,21 +295,24 @@ def invoice(request, contactid):
             contact_extra.priceband = cform.cleaned_data['priceband']
             contact_extra.account = cform.cleaned_data['account']
             contact_extra.save()
-            request.session[contactid] = [
+            request.session[storename] = [
                 i for i in iform.cleaned_data if not i.get('DELETE',True)]
             if "send" in request.POST or "send-background" in request.POST:
                 try:
                     invid, warnings = _send_to_xero(
-                        contactid, contact_extra, request.session[contactid])
-                    del request.session[contactid]
+                        contactid, contact_extra, request.session[storename],
+                        bill)
+                    del request.session[storename]
+                    iurl = "https://go.xero.com/{}/Edit.aspx?InvoiceID={}".format(
+                        "AccountsPayable" if bill else "AccountsReceivable",
+                        invid)
                     if warnings:
                         return render(request, 'invoicer/invoicewarnings.html',
                                       {"invid": invid,
+                                       "iurl": iurl,
                                        "warnings": warnings})
                     if "send" in request.POST:
-                        return HttpResponseRedirect(
-                            "https://go.xero.com/AccountsReceivable/"
-                            "Edit.aspx?InvoiceID=" + invid)
+                        return HttpResponseRedirect(iurl)
                     messages.success(
                         request,"Invoice for {} sent to Xero".format(contactname))
                     return HttpResponseRedirect(reverse(startinvoice))
@@ -308,9 +328,11 @@ def invoice(request, contactid):
             initial['account'] = contact_extra.account
         cform = ContactOptionsForm(initial=initial)
         iform = InvoiceLineFormSet(
-            priceband, initial=request.session.get(contactid))
+            priceband, initial=request.session.get(storename))
     return render(request, 'invoicer/invoice.html',
                   {"contactname": contactname,
+                   "bill": bill,
+                   "billaccount": settings.BILL_ACCOUNT,
                    "priceband": priceband,
                    "cform": cform,
                    "iform": iform})

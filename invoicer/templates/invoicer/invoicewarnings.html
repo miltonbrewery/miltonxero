@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% load staticfiles %}
-{% block title %}Invoice warnings{% endblock %}
+{% block title %}Warnings{% endblock %}
 {% block body %}
-<h1>Invoice created with warnings</h1>
+<h1>Created with warnings</h1>
 
-<p>The invoice has successfully been sent to Xero.  However, Xero
-  included some warnings in its response:</p>
+<p>The invoice or bill has successfully been sent to Xero.  However,
+  Xero included some warnings in its response:</p>
 
 <ul>
   {% for w in warnings %}
@@ -13,5 +13,5 @@
   {% endfor %}
 </ul>
 
-<p><a href="https://go.xero.com/AccountsReceivable/Edit.aspx?InvoiceId={{invid}}">Click here to continue to the invoice on Xero</a></p>
+<p><a href="{{iurl}}">Click here to continue to Xero</a></p>
 {% endblock %}

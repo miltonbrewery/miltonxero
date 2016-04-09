@@ -12,12 +12,18 @@
 </script>
 <script type="text/javascript" src="{% static "invoicer/invoice-updates.js" %}"></script>
 {% endblock %}
-{% block title %}{{contactname}} invoice{% endblock %}
+{% block title %}{{contactname}} {% if bill %}bill{% else %}invoice{% endif %}{% endblock %}
 {% block body %}
-<h1>Invoice for {{contactname}}</h1>
+<h1>{% if bill %}Bill from{% else %}Invoice for{% endif %} {{contactname}}</h1>
 <form method="POST" id="invoiceform">{% csrf_token %}
   {{cform.as_p}}
   {{iform.management_form}}
+  {% if bill %}
+  <p>N.B. everything entered on this page will be recorded against
+  account {{billaccount}} on Xero, regardless of the "account" setting
+  above or the accounts shown for the individual items below.  When it
+  is sent to Xero it will be a bill (accounts payable) and not an
+  invoice (accounts receivable).</p>  {% endif %}
   <table class="invoiceitems">
     <thead>
       <tr>
@@ -76,7 +82,7 @@
   <p><a href="{% url 'invoicer.views.product' %}" target="_blank">New product.</a> (Follow link from price/barrel to edit existing products.)</p>
   <input type="submit" name="save" value="Save / update">
   <input type="submit" name="send" value="Send to Xero and view in Xero">
-  <input type="submit" name="send-background" value="Send to Xero and start another invoice">
+  <input type="submit" name="send-background" value="Send to Xero and start another">
 </form>
 <script type="text/javascript">
   $('input[type=checkbox]').each(function () {
@@ -88,6 +94,7 @@
 <p><a href="{% url "invoicer.views.startinvoice" %}">Choose another
     contact</a></p>
 <p class="helptext">Hint: You can bookmark this page if you regularly
-send invoices to this customer.</p>
+{% if bill %}receive bills from{% else %}send invoices to{% endif %}
+this {% if bill %}supplier{% else %}customer{% endif %}.</p>
 
 {% endblock %}

@@ -98,10 +98,10 @@ def update_products(products):
     if r.status_code != 200:
         return r.status_code
 
-def send_invoice(contactid, priceband, items, override_account=None):
+def send_invoice(contactid, priceband, items, override_account, bill):
     invoices = Element("Invoices")
     inv = SubElement(invoices, "Invoice")
-    inv.append(_textelem("Type", "ACCREC"))
+    inv.append(_textelem("Type", "ACCPAY" if bill else "ACCREC"))
     c = SubElement(inv, "Contact")
     c.append(_textelem("ContactID", contactid))
     inv.append(_textelem(

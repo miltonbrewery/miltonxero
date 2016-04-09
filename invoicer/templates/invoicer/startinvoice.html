@@ -12,25 +12,46 @@
 <div id="accordion">
   <h3>Contacts</h3>
   <div>
-    <form id="contactform" method="POST">{% csrf_token %}
-      {{form.as_p}}
+    <form id="invoiceform" method="POST">{% csrf_token %}
+      <h4>Invoice to customer</h4>
+      {{iform.as_p}}
       <input type="submit" value="Create invoice">
     </form>
 <script type="text/javascript">
-var contact_autoComplete = new autoComplete({
-  selector: 'input[name="name"]',
+var invoice_autoComplete = new autoComplete({
+  selector: 'input[name="invoice-name"]',
   minChars: 2,
   source: function(term, response){
     $.getJSON('{% url "invoicer.views.contact_completions" %}', { q: term },
     function(data) { response(data); });
   },
   onSelect: function(event, term, item){
-    document.getElementById("contactform").submit();
+    document.getElementById("invoiceform").submit();
   },
 });
 </script>
+    <hr>
+    <h4>Bill from supplier</h4>
+    <form id="billform" method="POST">{% csrf_token %}
+      {{bform.as_p}}
+      <input type="submit" value="Enter bill">
+    </form>
+<script type="text/javascript">
+var bill_autoComplete = new autoComplete({
+  selector: 'input[name="bill-name"]',
+  minChars: 2,
+  source: function(term, response){
+    $.getJSON('{% url "invoicer.views.contact_completions" %}', { q: term },
+    function(data) { response(data); });
+  },
+  onSelect: function(event, term, item){
+    document.getElementById("billform").submit();
+  },
+});
+</script>
+<hr>
     <p><a href="https://go.xero.com/Contacts/Edit.aspx">Add a new
-contact.  (Contacts cannot be removed once added.)</a></p>
+	contact.  (Contacts cannot be removed once added.)</a></p>
   </div>
   <h3>Maintenance options</h3>
   <div>
