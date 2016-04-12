@@ -298,6 +298,9 @@ def invoice(request, contactid, bill=False):
             request.session[storename] = [
                 i for i in iform.cleaned_data if not i.get('DELETE',True)]
             if "send" in request.POST or "send-background" in request.POST:
+                if not request.session[storename]:
+                    messages.warning(request, "There was nothing to send!")
+                    return HttpResponseRedirect("")
                 try:
                     invid, warnings = _send_to_xero(
                         contactid, contact_extra, request.session[storename],
