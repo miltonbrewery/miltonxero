@@ -101,7 +101,3 @@ XERO_PRIVATE_KEY = read("private-key")
 # Current VAT multiplier
 from decimal import Decimal
 VAT_MULTIPLIER = Decimal("1.20")
-
-DEFAULT_ACCOUNT = "40000"
-SWAP_ACCOUNT = "41000"
-BILL_ACCOUNT = "50100"

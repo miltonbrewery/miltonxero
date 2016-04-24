@@ -8,12 +8,12 @@
 <div id="tabs" style="clear: both;">
   <ul>
     {% if abvs %}<li><a href="#pricetable">Base prices</a></li>{% endif %}
-    {% if configs %}<li><a href="#configs">Config variables</a></li>{% endif %}
-    {% if overrides %}<li><a href="#adjustments">Price adjustments</a></li>{% endif %}
+    {% if others %}<li><a href="#others">Other rules</a></li>{% endif %}
     <li><a href="#upload">Upload new table</a></li>
   </ul>
 {% if abvs %}
 <div id="pricetable" name="pricetable">
+  <p>Rules that match only on price band, product type and ABV:</p>
   <table>
     <thead>
       <tr>
@@ -36,45 +36,15 @@
 </div>
 {% endif %}
 
-{% if configs %}
-<div name="configs" id="configs">
-  <table>
-    <thead>
-      <tr>
-	<th>Name</th>
-	<th>Value</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for c in configs %}
-      <tr>
-	<td>{{c.name}}</td>
-	<td>{{c.value}}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
-
-{% if overrides %}
-<div name="adjustments" id="adjustments">
-  <table>
-    <thead>
-      <tr>
-	<th>Product</th>
-	<th>Price delta</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for o in overrides %}
-      <tr>
-	<td><a href="{% url "admin:invoicer_product_change" o.product.pk %}">{{o.product}}</a></td>
-	<td>{{o.pricechange}}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{% if others %}
+<div name="others" id="others">
+  <p>Other rules that can affect this price band:<p>
+  <ul>
+    {% for o in others %}
+    <li><a href="{% url "admin:invoicer_price_change" o.pk %}">{{o}}</a></li>
+    {% endfor %}
+  </ul>
+  <p><a href="{% url "admin:invoicer_price_changelist" %}">Edit price rules</a></p>
 </div>
 {% endif %}
 
@@ -96,9 +66,6 @@
     <dd>Numeric</dd><dt>The number is treated as an ABV.  The second
     and subsequent columns are used as the base prices for this ABV,
     for the product types in the column header.</dt>
-    <dd>Text</dd><dt>The text is used as the name of a configuration
-    variable.  The second column is used as the value of the
-    configuration variable.  Other columns are ignored.</dt>
   </dl>
 </div>
 </div>

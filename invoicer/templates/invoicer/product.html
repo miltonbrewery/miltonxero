@@ -39,7 +39,7 @@
   <tbody>
     {% for u in units %}
     <tr>
-      <th>{{u.unitname}}</th>
+      <th>{{u.unit.name}}</th>
       {% for b in u.bandinfo %}
       <td><a href="#" class="help_link">{{b.price}}</a>
 	<div class="help">
@@ -56,6 +56,14 @@
     {% endfor %}
   </tbody>
 </table>
+{% if rules %}
+<h3>Price rules that apply only to this product</h3>
+<ul>
+  {% for r in rules %}
+  <li><a href="{% url "admin:invoicer_price_change" r.pk %}">{{r}}</a></li>
+  {% endfor %}
+</ul>
+{% endif %}
 {% endif %}
 
 <p><a href="#" onClick="javascript:window.close();">Close</a></p>

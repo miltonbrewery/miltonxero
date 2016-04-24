@@ -23,7 +23,10 @@ var addAutoComplete = function(basename){
 	},
 	onSelect: function(event, term, item){
             $.getJSON(params['item_details_url'],
-		      { q: term, b: params['priceband'] },
+		      { q: term,
+			band: params['priceband'],
+			contact: params['contact'],
+			bill: params['bill'] },
 		      function(data) {
 			  updateDesc(basename, data);
 			  updateTotals();

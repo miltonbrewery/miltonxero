@@ -98,7 +98,7 @@ def update_products(products):
     if r.status_code != 200:
         return r.status_code
 
-def send_invoice(contactid, priceband, items, override_account, bill):
+def send_invoice(contactid, priceband, items, bill):
     invoices = Element("Invoices")
     inv = SubElement(invoices, "Invoice")
     inv.append(_textelem("Type", "ACCPAY" if bill else "ACCREC"))
@@ -113,17 +113,18 @@ def send_invoice(contactid, priceband, items, override_account, bill):
                             str(i) + " ({}% ABV)".format(i.product.abv)))
         li.append(_textelem("ItemCode", i.product.code))
         li.append(_textelem("Quantity", str(i.barrels)))
-        li.append(_textelem("AccountCode",
-                            override_account or i.product.account))
+        li.append(_textelem("AccountCode", i[priceband].account))
         li.append(_textelem("UnitAmount", str(i[priceband].priceperbarrel)))
     xml = tostring(invoices)
     r = requests.put(XERO_ENDPOINT_URL + "Invoices/",
                      data={'xml': xml},
                      auth=oauth)
+    if r.status_code == 400:
+        root = fromstring(r.text)
+        messages = [e.text for e in root.findall(".//Message")]
+        raise Problem("Xero rejected invoice: {}".format(", ".join(messages)))
     if r.status_code != 200:
-        raise Problem("Recieved {} response".format(r.status_code))
-    #print("Response: {}".format(r))
-    #print("Response data: {}".format(r.text))
+        raise Problem("Received {} response".format(r.status_code))
     root = fromstring(r.text)
     if root.tag != "Response":
         raise Problem("Response root tag '{}' was not 'Response'".format(

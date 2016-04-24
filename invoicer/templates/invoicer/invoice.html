@@ -6,6 +6,8 @@
 <script type="text/javascript">
   var params = {
     priceband: {{priceband.pk}},
+    bill: "{{bill}}",
+    contact: {{contactnumber}},
     item_completions_url: "{% url "invoicer.views.item_completions" %}",
     item_details_url: "{% url "invoicer.views.item_details" %}",
   };
@@ -18,12 +20,6 @@
 <form method="POST" id="invoiceform">{% csrf_token %}
   {{cform.as_p}}
   {{iform.management_form}}
-  {% if bill %}
-  <p>N.B. everything entered on this page will be recorded against
-  account {{billaccount}} on Xero, regardless of the "account" setting
-  above or the accounts shown for the individual items below.  When it
-  is sent to Xero it will be a bill (accounts payable) and not an
-  invoice (accounts receivable).</p>  {% endif %}
   <table class="invoiceitems">
     <thead>
       <tr>
@@ -90,6 +86,15 @@
   });
   updateTotals();
 </script>
+
+{% if rules %}
+<h3>Price rules that apply only to this contact</h3>
+<ul>
+  {% for r in rules %}
+  <li><a href="{% url "admin:invoicer_price_change" r.pk %}">{{r}}</a></li>
+  {% endfor %}
+</ul>
+{% endif %}
 
 <p><a href="{% url "invoicer.views.startinvoice" %}">Choose another
     contact</a></p>

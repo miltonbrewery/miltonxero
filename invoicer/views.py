@@ -20,9 +20,8 @@ import csv
 
 class UpdatePriceBandForm(forms.Form):
     table = forms.FileField(help_text="CSV file")
-    clear_price_adjustments = forms.BooleanField(
-        required=False, initial=False,
-        help_text="Clear all product price adjustments for this price band.")
+    priority = forms.IntegerField(help_text="Priority for the rules created "
+                                  "during this update", initial=20)
 
 class _PricebandUpdateFailure(Exception):
     def __init__(self, message):
@@ -30,11 +29,10 @@ class _PricebandUpdateFailure(Exception):
 
 @transaction.atomic
 def _csv_to_priceband(band, cd):
-    Price.objects.filter(band=band).delete()
-    ConfigOption.objects.filter(band=band).delete()
-    if cd['clear_price_adjustments']:
-        PriceOverride.objects.filter(band=band).delete()
-
+    priority=cd['priority']
+    Price.objects.filter(band=band, isSwap__isnull=True, isBill__isnull=True,
+                         product__isnull=True, unit__isnull=True,
+                         contact__isnull=True).delete()
     c = csv.reader(io.StringIO(codecs.decode(cd['table'].read())))
     header = next(c)
 
@@ -63,9 +61,10 @@ def _csv_to_priceband(band, cd):
         if abv:
             for ptype, price in zip(types, row[1:]):
                 if price:
-                    Price(band=band, type=ptype, abv=abv, price=price).save()
+                    Price(band=band, type=ptype, abv=abv, price=price, priority=priority).save()
         else:
-            ConfigOption(band=band, name=row[0], value=row[1]).save()
+            raise _PricebandUpdateFailure(
+                "First column value '{}' is not a decimal".format(row[0]))
 
 @login_required
 def priceband(request, bandid):
@@ -90,28 +89,36 @@ def priceband(request, bandid):
     types = ProductType.objects.all()
 
     abvs = Price.objects.filter(band=band)\
+                        .filter(abv__isnull=False)\
                         .order_by('abv')\
                         .values('abv')\
                         .distinct()\
                         .all()
     abvs = [a['abv'] for a in abvs]
 
-    prices = Price.objects.filter(band=band).all()
+    prices = Price.objects.filter(band=band)\
+                          .filter(abv__isnull=False)\
+                          .filter(isSwap__isnull=True)\
+                          .filter(isBill__isnull=True)\
+                          .filter(product__isnull=True)\
+                          .filter(unit__isnull=True)\
+                          .filter(contact__isnull=True)\
+                          .all()
     pd = {(p.abv, p.type): p.price for p in prices}
     
     # Build list of (abv, price1, price2, ...) lists
     abvs = [[a] + [pd.get((a, t)) for t in types] for a in abvs]
 
-    configs = ConfigOption.objects.filter(band=band).all()
+    others = Price.objects.filter(Q(band=band) | Q(band__isnull=True))\
+                          .filter(abv__isnull=True)\
+                          .order_by('priority')\
+                          .all()
 
-    overrides = PriceOverride.objects.filter(band=band).all()
-    
     return render(request, "invoicer/priceband.html",
                   {"band": band,
                    "types": types,
                    "abvs": abvs,
-                   "configs": configs,
-                   "overrides": overrides,
+                   "others": others,
                    "form": form,
                    })
 
@@ -161,8 +168,6 @@ class ContactOptionsForm(forms.Form):
         label="Price band",
         widget=forms.Select(attrs={"onChange":'javascript: submit()'}),
     )
-    account = forms.CharField(max_length=10, required=False,
-                              help_text="Overrides accounts shown below")
 
 class _XeroSendFailure(Exception):
     def __init__(self, message):
@@ -172,7 +177,7 @@ def _send_to_xero(contactid, contact_extra, lines, bill):
     products = set()
     invitems = []
     for l in lines:
-        il = parse_item(l['item'], exactmatch=True)
+        il = parse_item(l['item'], exactmatch=True, contact=contact_extra, isBill=bill)
         if len(il) != 1:
             raise _XeroSendFailure(
                 "Ambiguous invoice item '{}'".format(l))
@@ -192,8 +197,7 @@ def _send_to_xero(contactid, contact_extra, lines, bill):
 
     try:
         invid, warnings = xero.send_invoice(
-            contactid, contact_extra.priceband, invitems,
-            settings.BILL_ACCOUNT if bill else contact_extra.account, bill)
+            contactid, contact_extra.priceband, invitems, bill)
     except xero.Problem as e:
         raise _XeroSendFailure("Failed sending to Xero: {}".format(
             e.message))
@@ -203,10 +207,6 @@ class InvoiceLineForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(InvoiceLineForm, self).__init__(*args, **kwargs)
         self.cp = None
-        if "initial" in kwargs and "item" in kwargs['initial']:
-            l = parse_item(kwargs['initial']['item'], exactmatch=True)
-            if len(l) == 1:
-                self.cp = l[0]
     item = forms.CharField(max_length=500, required=True)
     def clean(self):
         cleaned_data = super(InvoiceLineForm, self).clean()
@@ -241,13 +241,15 @@ class InvoiceLineForm(forms.Form):
             return self.cp[self.priceband].priceincvat
         return ""
     def account(self):
-        if self.cp:
-            return self.cp.product.account
+        if self.cp and self.priceband:
+            return self.cp[self.priceband].account
         return ""
 
 class BaseInvoiceLineFormSet(forms.BaseFormSet):
-    def __init__(self, priceband, *args, **kwargs):
+    def __init__(self, priceband, bill, contact, *args, **kwargs):
         self.priceband = priceband
+        self.bill = bill
+        self.contact = contact
         super(BaseInvoiceLineFormSet, self).__init__(*args, **kwargs)
     def _construct_form(self, *args, **kwargs):
         # This is very much a hack, because we need to be compatible with
@@ -255,6 +257,13 @@ class BaseInvoiceLineFormSet(forms.BaseFormSet):
         # until django-1.9.
         f = super(BaseInvoiceLineFormSet, self)._construct_form(*args, **kwargs)
         f.priceband = self.priceband
+        f.bill = self.bill
+        f.contact = self.contact
+        if f['item'].value():
+            l = parse_item(f['item'].value(), exactmatch=True,
+                           isBill=self.bill, contact=self.contact)
+            if len(l) == 1:
+                f.cp = l[0]
         return f
 
 InvoiceLineFormSet = forms.formset_factory(
@@ -264,8 +273,12 @@ InvoiceLineFormSet = forms.formset_factory(
 def invoice(request, contactid, bill=False):
     try:
         contact_extra = Contact.objects.get(xero_id=contactid)
+        rules = Price.objects.filter(contact=contact_extra).all()
+        contactnumber = contact_extra.pk
     except Contact.DoesNotExist:
         contact_extra = None
+        rules = []
+        contactnumber = 0
     # Look up the contact in xero if the cached info is out of date or absent
     if not contact_extra or \
        contact_extra.updated < (timezone.now() - datetime.timedelta(
@@ -285,7 +298,7 @@ def invoice(request, contactid, bill=False):
         priceband = None
         if cform.is_valid():
             priceband = cform.cleaned_data['priceband']
-        iform = InvoiceLineFormSet(priceband, request.POST,
+        iform = InvoiceLineFormSet(priceband, bill, contact_extra, request.POST,
                                    initial=request.session.get(storename))
         if cform.is_valid() and iform.is_valid():
             if not contact_extra:
@@ -293,7 +306,6 @@ def invoice(request, contactid, bill=False):
             contact_extra.name = contactname
             contact_extra.updated = timezone.now()
             contact_extra.priceband = cform.cleaned_data['priceband']
-            contact_extra.account = cform.cleaned_data['account']
             contact_extra.save()
             request.session[storename] = [
                 i for i in iform.cleaned_data if not i.get('DELETE',True)]
@@ -328,14 +340,15 @@ def invoice(request, contactid, bill=False):
         if contact_extra:
             priceband = contact_extra.priceband
             initial['priceband'] = priceband
-            initial['account'] = contact_extra.account
         cform = ContactOptionsForm(initial=initial)
         iform = InvoiceLineFormSet(
-            priceband, initial=request.session.get(storename))
+            priceband, bill, contact_extra,
+            initial=request.session.get(storename))
     return render(request, 'invoicer/invoice.html',
                   {"contactname": contactname,
+                   "contactnumber": contactnumber,
+                   "rules": rules,
                    "bill": bill,
-                   "billaccount": settings.BILL_ACCOUNT,
                    "priceband": priceband,
                    "cform": cform,
                    "iform": iform})
@@ -348,25 +361,25 @@ def contact_completions(request):
 
 class InvoiceItemBand:
     def __init__(self, item, priceband):
-        self.priceperbarrel, self.reasons = priceband.price_for(item)
+        self.priceperbarrel, self.account, self.reasons \
+            = priceband.apply_rules_for(item)
         self.price = (self.priceperbarrel * item.barrels)\
             .quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         self.priceincvat = (self.price * settings.VAT_MULTIPLIER)\
             .quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         
 class InvoiceItem:
-    def __init__(self, items, unit, product):
+    def __init__(self, items, unit, product, isBill, contact):
         self.items = items
-        self.unitname = unit.name
-        self.barrelsperitem = unit.size
+        self.unit = unit
         self.barrels = unit.size * items
-        self.producttype = unit.type
-        self.flags = unit.flags
         self.product = product
+        self.isBill = isBill
+        self.contact = contact
         self._bands = {}
     def __str__(self):
         return "{} {}{} {}".format(
-            self.items, self.unitname, "s" if self.items > 1 else "",
+            self.items, self.unit.name, "s" if self.items > 1 else "",
             self.product.name)
     def __getitem__(self, key):
         if key not in self._bands:
@@ -376,7 +389,7 @@ class InvoiceItem:
 itemre = re.compile(r'^(?P<qty>\d+)\s*(?P<unit>[\w]+?( keg)?)s?\s+(?P<product>[\w\s&-]+)$')
 shortre = re.compile(r'^(?P<qty>\d+)\s*(?P<product>[\w\s&-]+)$')
 
-def parse_item(description, exactmatch=False):
+def parse_item(description, exactmatch=False, isBill=False, contact=None):
     """Convert an item description to a list of InvoiceItem objects
     """
     items = 0
@@ -415,7 +428,7 @@ def parse_item(description, exactmatch=False):
                           .filter(productfilter)\
                           .all()
         for p in products:
-            l.append(InvoiceItem(items, unit, p))
+            l.append(InvoiceItem(items, unit, p, isBill, contact))
     l.sort(key=lambda item:item.product.swap)
     # If the product name entered matches (case-insensitive) the
     # product code, sort this to the top
@@ -444,9 +457,11 @@ def item_details(request):
         }
     try:
         q = request.GET['q']
-        band = int(request.GET['b'])
+        band = int(request.GET['band'])
+        contact = int(request.GET['contact'])
+        isBill = True if request.GET['bill']=='True' else False
     except KeyError:
-        d['error'] = "Invalid q and/or b parameters in request"
+        d['error'] = "Invalid parameters in request; supply q, band, contact and bill"
         return JsonResponse(d)
     # band will be the pk - integer
     try:
@@ -454,7 +469,11 @@ def item_details(request):
     except PriceBand.DoesNotExist:
         d['error'] = "Price band {} does not exist".format(band)
         return JsonResponse(d)
-    l = parse_item(q, exactmatch=True)
+    try:
+        contact = Contact.objects.get(pk=contact)
+    except Contact.DoesNotExist:
+        contact = None
+    l = parse_item(q, exactmatch=True, isBill=isBill, contact=contact)
     if len(l) != 1:
         d['error'] = "Ambiguous invoice line"
         return JsonResponse(d)
@@ -470,7 +489,7 @@ def item_details(request):
             }),
         'total': i[priceband].price,
         'incvat': i[priceband].priceincvat,
-        'account': i.product.account,
+        'account': i[priceband].account,
         'error': "(Not saved)",
     }
     return JsonResponse(d)
@@ -516,18 +535,21 @@ def product(request, productid=None):
         form = ProductForm(instance=product)
     # Table has price band across the top, relevant units down the left
     if product:
+        rules = Price.objects.filter(product=product).all()
         bands = PriceBand.objects.all()
-        units = [InvoiceItem(1, x, product)
+        units = [InvoiceItem(1, x, product, False, None)
                  for x in Unit.objects.filter(type=product.type).all()]
         # XXX this works around the inability of the Django template system
         # to perform dictionary lookups based on variables
         for u in units:
             u.bandinfo = [u[b] for b in bands]
     else:
+        rules = []
         bands = []
         units = []
     return render(request, 'invoicer/product.html',
                   {'product': product, 'form': form,
+                   'rules': rules,
                    'bands': bands, 'units': units})
 
 @login_required
