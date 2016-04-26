@@ -51,6 +51,8 @@ def _csv_to_priceband(band, cd):
         raise _PricebandUpdateFailure("No price band columns in file")
 
     for row in c:
+        if not row:
+            continue
         if not row[0]:
             continue
         abv = None
