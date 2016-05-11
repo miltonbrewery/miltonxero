@@ -388,8 +388,8 @@ class InvoiceItem:
             self._bands[key] = InvoiceItemBand(self, key)
         return self._bands[key]
 
-itemre = re.compile(r'^(?P<qty>\d+)\s*(?P<unit>[\w]+?( keg)?)s?\s+(?P<product>[\w\s&-]+)$')
-shortre = re.compile(r'^(?P<qty>\d+)\s*(?P<product>[\w\s&-]+)$')
+itemre = re.compile(r'^(?P<qty>\d+)\s*(?P<unit>[\w]+?( keg)?)s?\s+(?P<product>[\w\s&\'\/-]+)$')
+shortre = re.compile(r'^(?P<qty>\d+)\s*(?P<product>[\w\s&\'\/-]+)$')
 
 def parse_item(description, exactmatch=False, isBill=False, contact=None):
     """Convert an item description to a list of InvoiceItem objects
