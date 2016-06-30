@@ -106,6 +106,10 @@ def send_invoice(contactid, priceband, items, bill):
     c.append(_textelem("ContactID", contactid))
     inv.append(_textelem(
         "LineAmountTypes", "Exclusive"))
+    inv.append(_textelem(
+        "Date", datetime.date.today().isoformat()))
+    inv.append(_textelem(
+        "DueDate", (datetime.date.today()+datetime.timedelta(days=30)).isoformat()))
     litems = SubElement(inv, "LineItems")
     for i in items:
         li = SubElement(litems, "LineItem")
