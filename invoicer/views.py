@@ -192,7 +192,8 @@ def _send_to_xero(contactid, contact_extra, lines, bill):
         problem = xero.update_products(products)
         if problem:
             raise _XeroSendFailure("Received {} response when sending product "
-                                   "details to Xero".format(problem))
+                                   "details to Xero.  Products were: {}.".format(
+                                       problem, [p.name for p in products]))
         for p in products:
             p.sent = True
             p.save()

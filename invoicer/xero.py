@@ -5,6 +5,8 @@ from xml.etree.ElementTree import Element, SubElement, tostring, fromstring
 from django.conf import settings
 from django.http import Http404
 import datetime
+import logging
+log = logging.getLogger(__name__)
 
 XERO_ENDPOINT_URL = "https://api.xero.com/api.xro/2.0/"
 
@@ -96,6 +98,7 @@ def update_products(products):
                       data={'xml': xml},
                       auth=oauth)
     if r.status_code != 200:
+        log.error("%s", r.text)
         return r.status_code
 
 def send_invoice(contactid, priceband, items, bill):
