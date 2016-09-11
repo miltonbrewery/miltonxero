@@ -1,5 +1,6 @@
 consumer-key
 private-key
+django-secret-key
 *~
 *.pyc
 __pycache__
