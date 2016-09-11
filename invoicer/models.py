@@ -60,12 +60,6 @@ class ProductType(models.Model):
     """Type of product, eg. real ale or craft keg
     """
     name = models.CharField(max_length=80)
-    def price_for_abv(self, band, abv):
-        try:
-            price = Price.objects.get(band=band, type=self, abv=abv)
-        except Price.DoesNotExist:
-            return None
-        return price.price
     def __str__(self):
         return self.name
 
