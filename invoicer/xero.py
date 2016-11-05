@@ -101,7 +101,7 @@ def update_products(products):
         log.error("%s", r.text)
         return r.status_code
 
-def send_invoice(contactid, priceband, items, bill):
+def send_invoice(contactid, priceband, items, bill, date):
     invoices = Element("Invoices")
     inv = SubElement(invoices, "Invoice")
     inv.append(_textelem("Type", "ACCPAY" if bill else "ACCREC"))
@@ -110,9 +110,9 @@ def send_invoice(contactid, priceband, items, bill):
     inv.append(_textelem(
         "LineAmountTypes", "Exclusive"))
     inv.append(_textelem(
-        "Date", datetime.date.today().isoformat()))
+        "Date", date.isoformat()))
     inv.append(_textelem(
-        "DueDate", (datetime.date.today()+datetime.timedelta(days=31)).isoformat()))
+        "DueDate", (date + datetime.timedelta(days=31)).isoformat()))
     litems = SubElement(inv, "LineItems")
     for i in items:
         li = SubElement(litems, "LineItem")

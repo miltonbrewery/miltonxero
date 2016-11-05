@@ -171,12 +171,13 @@ class ContactOptionsForm(forms.Form):
         label="Price band",
         widget=forms.Select(attrs={"onChange":'javascript: submit()'}),
     )
+    date = forms.DateField(label="Date")
 
 class _XeroSendFailure(Exception):
     def __init__(self, message):
         self.message = message
 
-def _send_to_xero(contactid, contact_extra, lines, bill):
+def _send_to_xero(contactid, contact_extra, lines, bill, date):
     products = set()
     invitems = []
     for l in lines:
@@ -201,7 +202,7 @@ def _send_to_xero(contactid, contact_extra, lines, bill):
 
     try:
         invid, warnings = xero.send_invoice(
-            contactid, contact_extra.priceband, invitems, bill)
+            contactid, contact_extra.priceband, invitems, bill, date)
     except xero.Problem as e:
         raise _XeroSendFailure("Failed sending to Xero: {}".format(
             e.message))
@@ -320,7 +321,7 @@ def invoice(request, contactid, bill=False):
                 try:
                     invid, warnings = _send_to_xero(
                         contactid, contact_extra, request.session[storename],
-                        bill)
+                        bill, cform.cleaned_data['date'])
                     del request.session[storename]
                     iurl = "https://go.xero.com/organisationlogin/default.aspx?shortcode={}&redirecturl=/{}/Edit.aspx?InvoiceID={}".format(
                         settings.XERO_ORGANISATION_SHORTCODE,
@@ -340,7 +341,7 @@ def invoice(request, contactid, bill=False):
                     messages.error(request, e.message)
             return HttpResponseRedirect("")
     else:
-        initial = {}
+        initial = {'date': datetime.date.today()}
         priceband = None
         if contact_extra:
             priceband = contact_extra.priceband

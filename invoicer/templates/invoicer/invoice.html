@@ -85,6 +85,11 @@
   this.tabIndex=-1;
   });
   updateTotals();
+
+  $( function() {
+  $("#id_date").datepicker({
+    dateFormat: "dd/mm/yy"});
+  });
 </script>
 
 {% if rules %}
