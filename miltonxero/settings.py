@@ -98,6 +98,8 @@ XERO_CONSUMER_KEY = read("consumer-key")
 
 XERO_PRIVATE_KEY = read("private-key")
 
+XERO_ORGANISATION_SHORTCODE = read("xero-shortcode")
+
 # Current VAT multiplier
 from decimal import Decimal
 VAT_MULTIPLIER = Decimal("1.20")

@@ -321,7 +321,8 @@ def invoice(request, contactid, bill=False):
                         contactid, contact_extra, request.session[storename],
                         bill)
                     del request.session[storename]
-                    iurl = "https://go.xero.com/{}/Edit.aspx?InvoiceID={}".format(
+                    iurl = "https://go.xero.com/organisationlogin/default.aspx?shortcode={}&redirecturl=/{}/Edit.aspx?InvoiceID={}".format(
+                        settings.XERO_ORGANISATION_SHORTCODE,
                         "AccountsPayable" if bill else "AccountsReceivable",
                         invid)
                     if warnings:
