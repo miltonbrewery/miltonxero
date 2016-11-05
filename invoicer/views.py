@@ -162,7 +162,8 @@ def startinvoice(request):
                   {"iform": iform,
                    "bform": bform,
                    "bands": pricebands,
-                   "ptypes": ptypes})
+                   "ptypes": ptypes,
+                   "shortcode": settings.XERO_ORGANISATION_SHORTCODE})
 
 class ContactOptionsForm(forms.Form):
     priceband = forms.ModelChoiceField(
