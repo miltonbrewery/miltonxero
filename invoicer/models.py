@@ -75,7 +75,7 @@ class Unit(models.Model):
 
 class Product(models.Model):
     code = models.CharField(max_length=30, unique=True) # xero max is 30
-    name = models.CharField(max_length=80, unique=True)
+    name = models.CharField(max_length=80, unique=True) # XXX xero max is 50, and we're adding the ABV too
     abv = models.DecimalField(max_digits=3, decimal_places=1)
     type = models.ForeignKey(ProductType)
     swap = models.BooleanField(default=True)

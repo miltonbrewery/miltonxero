@@ -339,6 +339,8 @@ def invoice(request, contactid, bill=False):
                     return HttpResponseRedirect(reverse(startinvoice))
                 except _XeroSendFailure as e:
                     messages.error(request, e.message)
+            elif "clear" in request.POST:
+                del request.session[storename]
             return HttpResponseRedirect("")
     else:
         initial = {'date': datetime.date.today()}
