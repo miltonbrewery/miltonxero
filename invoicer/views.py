@@ -172,7 +172,8 @@ class ContactOptionsForm(forms.Form):
         widget=forms.Select(attrs={"onChange":'javascript: submit()'}),
     )
     date = forms.DateField(label="Date")
-    reference = forms.CharField(label="Reference", max_length=255)
+    reference = forms.CharField(label="Reference", max_length=255,
+                                required=False)
 
 class _XeroSendFailure(Exception):
     def __init__(self, message):
