@@ -373,8 +373,9 @@ class InvoiceItemBand:
     def __init__(self, item, priceband):
         self.priceperbarrel, self.account, self.reasons \
             = priceband.apply_rules_for(item)
-        self.price = (self.priceperbarrel * item.barrels)\
+        self.price_per_unit = (self.priceperbarrel * item.unit.size)\
             .quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        self.price = self.price_per_unit * item.items
         self.priceincvat = (self.price * settings.VAT_MULTIPLIER)\
             .quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         
