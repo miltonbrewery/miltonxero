@@ -172,6 +172,9 @@ class ContactOptionsForm(forms.Form):
         widget=forms.Select(attrs={"onChange":'javascript: submit()'}),
     )
     date = forms.DateField(label="Date")
+    suppress_due_date = forms.BooleanField(
+        label="Don't send due date",
+        required=False)
     reference = forms.CharField(label="Reference", max_length=255,
                                 required=False)
 
@@ -202,9 +205,12 @@ def _send_to_xero(contactid, contact_extra, lines, bill, date, reference):
             p.sent = True
             p.save()
 
+    duedate = None if contact_extra.suppress_due_date \
+              else (date + datetime.timedelta(days=31))
     try:
         invid, warnings = xero.send_invoice(
-            contactid, contact_extra.priceband, invitems, bill, date, reference)
+            contactid, contact_extra.priceband, invitems, bill, date, duedate,
+            reference)
     except xero.Problem as e:
         raise _XeroSendFailure("Failed sending to Xero: {}".format(
             e.message))
@@ -313,9 +319,12 @@ def invoice(request, contactid, bill=False):
             contact_extra.name = contactname
             contact_extra.updated = timezone.now()
             contact_extra.priceband = cform.cleaned_data['priceband']
+            contact_extra.suppress_due_date = cform.cleaned_data['suppress_due_date']
             contact_extra.save()
             request.session[storename] = [
                 i for i in iform.cleaned_data if not i.get('DELETE',True)]
+            request.session[storename + '-date'] = cform.cleaned_data['date'].timetuple()
+            request.session[storename + '-reference'] = cform.cleaned_data['reference']
             if "send" in request.POST or "send-background" in request.POST:
                 if not request.session[storename]:
                     messages.warning(request, "There was nothing to send!")
@@ -345,15 +354,23 @@ def invoice(request, contactid, bill=False):
                 del request.session[storename]
             return HttpResponseRedirect("")
     else:
+        iform_initial = request.session.get(storename)
         initial = {'date': datetime.date.today()}
+        if iform_initial:
+            stored_date = request.session.get(storename + "-date")
+            if stored_date:
+                initial['date'] = datetime.date(*stored_date[:3])
+            initial['reference'] = request.session.get(
+                storename + '-reference', "")
         priceband = None
         if contact_extra:
             priceband = contact_extra.priceband
             initial['priceband'] = priceband
+            initial['suppress_due_date'] = contact_extra.suppress_due_date
         cform = ContactOptionsForm(initial=initial)
         iform = InvoiceLineFormSet(
             priceband, bill, contact_extra,
-            initial=request.session.get(storename))
+            initial=iform_initial)
     return render(request, 'invoicer/invoice.html',
                   {"contactname": contactname,
                    "contactnumber": contactnumber,
