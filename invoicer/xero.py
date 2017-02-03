@@ -49,6 +49,7 @@ def get_contacts(q, use_contains=False):
     r = requests.get(XERO_ENDPOINT_URL + "Contacts/", params={
         "where": w, "order": "Name"}, auth=oauth)
     if r.status_code != 200:
+        log.error("Xero API returned status code %d during get_contacts; text was %s", r.status_code, r.text)
         return []
     root = fromstring(r.text)
     if root.tag != "Response":
