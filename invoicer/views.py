@@ -378,7 +378,8 @@ def invoice(request, contactid, bill=False):
                    "bill": bill,
                    "priceband": priceband,
                    "cform": cform,
-                   "iform": iform})
+                   "iform": iform,
+                   "shortcode": settings.XERO_ORGANISATION_SHORTCODE})
 
 @login_required
 def contact_completions(request):
