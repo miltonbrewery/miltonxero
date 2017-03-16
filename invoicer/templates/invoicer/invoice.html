@@ -104,7 +104,7 @@
 
 <p><a href="{% url "invoicer.views.startinvoice" %}">Choose another
     contact</a></p>
-<p><a href="https://go.xero.com/organisationlogin/default.aspx?shortcode={{shortcode}}&amp;redirecturl=/AccountsPayable/Search.aspx?invoiceStatus=INVOICESTATUS/DRAFT">Go to draft invoices</a></p>
+<p><a href="https://go.xero.com/organisationlogin/default.aspx?shortcode={{shortcode}}&amp;redirecturl=/AccountsReceivable/Search.aspx?invoiceStatus=INVOICESTATUS/DRAFT">Go to draft invoices</a></p>
 <p class="helptext">Hint: You can bookmark this page if you regularly
 {% if bill %}receive bills from{% else %}send invoices to{% endif %}
 this {% if bill %}supplier{% else %}customer{% endif %}.</p>
