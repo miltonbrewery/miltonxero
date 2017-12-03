@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonResponse
 from django.core.urlresolvers import reverse
 from django.db.models import Q
@@ -82,7 +82,7 @@ def priceband(request, bandid):
             try:
                 _csv_to_priceband(band, form.cleaned_data)
                 messages.success(request, "Price band updated.")
-                return HttpResponseRedirect("")
+                return redirect(band)
             except _PricebandUpdateFailure as e:
                 messages.error(request, e.message)
     else:
@@ -328,7 +328,7 @@ def invoice(request, contactid, bill=False):
             if "send" in request.POST or "send-background" in request.POST:
                 if not request.session[storename]:
                     messages.warning(request, "There was nothing to send!")
-                    return HttpResponseRedirect("")
+                    return HttpResponseRedirect(request.path)
                 try:
                     invid, warnings = _send_to_xero(
                         contactid, contact_extra, request.session[storename],
@@ -347,12 +347,12 @@ def invoice(request, contactid, bill=False):
                         return HttpResponseRedirect(iurl)
                     messages.success(
                         request,"Invoice for {} sent to Xero".format(contactname))
-                    return HttpResponseRedirect(reverse(startinvoice))
+                    return redirect("new-invoice")
                 except _XeroSendFailure as e:
                     messages.error(request, e.message)
             elif "clear" in request.POST:
                 del request.session[storename]
-            return HttpResponseRedirect("")
+            return HttpResponseRedirect(request.path)
     else:
         iform_initial = request.session.get(storename)
         initial = {'date': datetime.date.today()}
