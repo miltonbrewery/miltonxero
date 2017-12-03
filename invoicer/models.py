@@ -44,7 +44,7 @@ class Contact(models.Model):
     """Extra details for Xero contacts.
 
     name is just a cache; it isn't used for auto-complete.  updated is
-    the time the cache was lated updated.
+    the time the cache was last updated.
     """
     xero_id = models.CharField(max_length=36, unique=True) # uuid
     priceband = models.ForeignKey(PriceBand)
