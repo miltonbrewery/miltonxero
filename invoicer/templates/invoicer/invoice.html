@@ -8,8 +8,8 @@
     priceband: {{priceband.pk}},
     bill: "{{bill}}",
     contact: {{contactnumber}},
-    item_completions_url: "{% url "invoicer.views.item_completions" %}",
-    item_details_url: "{% url "invoicer.views.item_details" %}",
+    item_completions_url: "{% url "item-completions" %}",
+    item_details_url: "{% url "item-details" %}",
   };
 </script>
 <script type="text/javascript" src="{% static "invoicer/invoice-updates.js" %}"></script>
@@ -75,7 +75,7 @@
       </tr>
     </tfoot>
   </table>
-  <p><a href="{% url 'invoicer.views.product' %}" target="_blank">New product.</a> (Follow link from price/barrel to edit existing products.)</p>
+  <p><a href="{% url 'add-product' %}" target="_blank">New product.</a> (Follow link from price/barrel to edit existing products.)</p>
   <input type="submit" name="save" value="Save / update">
   <input type="submit" name="send" value="Send to Xero and view in Xero">
   <input type="submit" name="send-background" value="Send to Xero and start another">
@@ -102,8 +102,7 @@
 </ul>
 {% endif %}
 
-<p><a href="{% url "invoicer.views.startinvoice" %}">Choose another
-    contact</a></p>
+<p><a href="{% url "new-invoice" %}">Choose another contact</a></p>
 <p><a href="https://go.xero.com/organisationlogin/default.aspx?shortcode={{shortcode}}&amp;redirecturl=/AccountsReceivable/Search.aspx?invoiceStatus=INVOICESTATUS/DRAFT">Go to draft invoices</a></p>
 <p class="helptext">Hint: You can bookmark this page if you regularly
 {% if bill %}receive bills from{% else %}send invoices to{% endif %}

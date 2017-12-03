@@ -2,17 +2,20 @@ from django.db import models
 from django.db.models import Q
 from decimal import Decimal, ROUND_UP
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 zero = Decimal("0.00")
 
 class PriceBand(models.Model):
     """A named group of pricing details."""
     name = models.CharField(max_length=40, unique=True)
+
     def __str__(self):
         return self.name
-    @models.permalink
+
     def get_absolute_url(self):
-        return ('invoicer.views.priceband',[self.pk])
+        return reverse('priceband', [self.pk])
+
     def apply_rules_for(self, item):
         """Price per barrel, rules and account for an invoice item
 
@@ -51,16 +54,18 @@ class Contact(models.Model):
     suppress_due_date = models.BooleanField(default=False)
     name = models.CharField(max_length=500) # xero max is 500
     updated = models.DateTimeField()
+
     def __str__(self):
         return self.name
-    @models.permalink
+
     def get_absolute_url(self):
-        return ('invoicer.views.invoice',[self.xero_id])
+        return reverse('invoice', [self.xero_id])
 
 class ProductType(models.Model):
     """Type of product, eg. real ale or craft keg
     """
     name = models.CharField(max_length=80)
+
     def __str__(self):
         return self.name
 
@@ -71,6 +76,7 @@ class Unit(models.Model):
     size = models.DecimalField(max_digits=5, decimal_places=4,
                                help_text="Size in barrels")
     type = models.ForeignKey(ProductType)
+
     def __str__(self):
         return self.name
 
@@ -87,9 +93,9 @@ class Product(models.Model):
         return "{} ({}% ABV)".format(self.name,self.abv)
     class Meta:
         ordering = ['name']
-    @models.permalink
+
     def get_absolute_url(self):
-        return ('invoicer.views.product',[self.pk])
+        return reverse('edit-product', [self.pk])
 
 def _round_up_to(amount, multiple):
     difference = amount % multiple

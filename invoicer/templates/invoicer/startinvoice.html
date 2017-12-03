@@ -22,7 +22,7 @@ var invoice_autoComplete = new autoComplete({
   selector: 'input[name="invoice-name"]',
   minChars: 2,
   source: function(term, response){
-    $.getJSON('{% url "invoicer.views.contact_completions" %}', { q: term },
+    $.getJSON('{% url "contact-completions" %}', { q: term },
     function(data) { response(data); });
   },
   onSelect: function(event, term, item){
@@ -41,7 +41,7 @@ var bill_autoComplete = new autoComplete({
   selector: 'input[name="bill-name"]',
   minChars: 2,
   source: function(term, response){
-    $.getJSON('{% url "invoicer.views.contact_completions" %}', { q: term },
+    $.getJSON('{% url "contact-completions" %}', { q: term },
     function(data) { response(data); });
   },
   onSelect: function(event, term, item){
@@ -56,15 +56,14 @@ var bill_autoComplete = new autoComplete({
   </div>
   <h3>Maintenance options</h3>
   <div>
-    <p><a href="{% url "invoicer.views.product" %}"
-    target="_blank">Add a product</a></p>
+    <p><a href="{% url "add-product" %}" target="_blank">Add a product</a></p>
     <p><a href="{% url "admin:invoicer_product_changelist" %}">Edit or remove products</a></p>
 
     {% if bands %}
     <p>View or update a price band:</p>
     <ul>
       {% for b in bands %}
-      <li><a href="{% url "invoicer.views.priceband" b.pk %}">{{b.name}}</a></li>
+      <li><a href="{% url "priceband" b.pk %}">{{b.name}}</a></li>
       {% endfor %}
     </ul>
     {% endif %}
