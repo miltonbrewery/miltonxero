@@ -70,7 +70,16 @@ def get_contact(contactid):
     c = root.find("./Contacts/Contact")
     if not c:
         return
-    return _contact_to_dict(c)
+    d = _contact_to_dict(c)
+    bills = c.find("PaymentTerms/Bills")
+    if bills:
+        d["BillDay"] = int(_fieldtext(bills, "Day"))
+        d["BillType"] = _fieldtext(bills, "Type")
+    sales = c.find("PaymentTerms/Sales")
+    if sales:
+        d["SaleDay"] = int(_fieldtext(sales, "Day"))
+        d["SaleType"] = _fieldtext(sales, "Type")
+    return d
 
 def get_product(code):
     r = requests.get(XERO_ENDPOINT_URL + "Items/" + code, auth=oauth)

@@ -47,13 +47,26 @@ class Contact(models.Model):
     """Extra details for Xero contacts.
 
     name is just a cache; it isn't used for auto-complete.  updated is
-    the time the cache was last updated.
+    the time the cache was last updated.  Additional cached fields:
+    bill_{days,terms} and invoice_{days,terms}.
     """
     xero_id = models.CharField(max_length=36, unique=True) # uuid
     priceband = models.ForeignKey(PriceBand)
     suppress_due_date = models.BooleanField(default=False)
     name = models.CharField(max_length=500) # xero max is 500
     updated = models.DateTimeField()
+    TERMS_CHOICES = (
+        ("DAYSAFTERBILLDATE", "day(s) after bill date"),
+        ("DAYSAFTERBILLMONTH", "day(s) after bill month"),
+        ("OFCURRENTMONTH", "of the current month"),
+        ("OFFOLLOWINGMONTH", "of the following month"),
+    )
+    bill_days = models.IntegerField(null=True, blank=True)
+    bill_terms = models.CharField(max_length=20, choices=TERMS_CHOICES,
+                                  blank=True)
+    invoice_days = models.IntegerField(null=True, blank=True)
+    invoice_terms = models.CharField(max_length=20, choices=TERMS_CHOICES,
+                                     blank=True)
 
     def __str__(self):
         return self.name

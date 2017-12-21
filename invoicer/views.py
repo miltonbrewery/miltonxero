@@ -182,6 +182,37 @@ class _XeroSendFailure(Exception):
     def __init__(self, message):
         self.message = message
 
+def _next_month(date):
+    """Return the first day of the next month
+    """
+    if date.month == 12:
+        return datetime.date(date.year + 1, 1, 1)
+    else:
+        return datetime.date(date.year, date.month + 1, 1)
+
+def _last_day_of_month(date):
+    """Return the number of the last day of the month
+    """
+    n = _next_month(date)
+    l = n - datetime.timedelta(days=1)
+    return l.day
+
+def _calc_due(date, days, policy):
+    if policy == "DAYSAFTERBILLDATE":
+        return date + datetime.timedelta(days=days)
+    elif policy == "DAYSAFTERBILLMONTH":
+        return _next_month(date) + datetime.timedelta(days=days - 1)
+    elif policy == "OFCURRENTMONTH":
+        return datetime.date(date.year, date.month,
+                             min(max(days, date.day),
+                                 _last_day_of_month(date)))
+    elif policy == "OFFOLLOWINGMONTH":
+        m = _next_month(date)
+        maxday = _last_day_of_month(m)
+        return datetime.date(m.year, m.month, min(days, maxday))
+    else:
+        return None
+
 def _send_to_xero(contactid, contact_extra, lines, bill, date, reference):
     products = set()
     invitems = []
@@ -205,8 +236,18 @@ def _send_to_xero(contactid, contact_extra, lines, bill, date, reference):
             p.sent = True
             p.save()
 
-    duedate = None if contact_extra.suppress_due_date \
-              else (date + datetime.timedelta(days=31))
+    duedate = date + datetime.timedelta(days=31)
+    if bill:
+        if contact_extra.bill_terms:
+            duedate = _calc_due(date, contact_extra.bill_days,
+                                contact_extra.bill_terms)
+    else:
+        if contact_extra.invoice_terms:
+            duedate = _calc_due(date, contact_extra.invoice_days,
+                                contact_extra.invoice_terms)
+    if contact_extra.suppress_due_date:
+        duedate = None
+
     try:
         invid, warnings = xero.send_invoice(
             contactid, contact_extra.priceband, invitems, bill, date, duedate,
@@ -293,6 +334,7 @@ def invoice(request, contactid, bill=False):
         rules = []
         contactnumber = 0
     # Look up the contact in xero if the cached info is out of date or absent
+    contact = None
     if not contact_extra or \
        contact_extra.updated < (timezone.now() - datetime.timedelta(
            minutes=5)):
@@ -320,6 +362,13 @@ def invoice(request, contactid, bill=False):
             contact_extra.updated = timezone.now()
             contact_extra.priceband = cform.cleaned_data['priceband']
             contact_extra.suppress_due_date = cform.cleaned_data['suppress_due_date']
+            # We can only update the term fields if we contacted Xero
+            # this request.
+            if contact:
+                contact_extra.bill_days = contact.get("BillDay", None)
+                contact_extra.bill_terms = contact.get("BillType", "")
+                contact_extra.invoice_days = contact.get("SaleDay", None)
+                contact_extra.invoice_terms = contact.get("SaleType", "")
             contact_extra.save()
             request.session[storename] = [
                 i for i in iform.cleaned_data if not i.get('DELETE',True)]
