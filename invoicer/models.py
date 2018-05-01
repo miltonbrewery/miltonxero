@@ -53,6 +53,7 @@ class Contact(models.Model):
     xero_id = models.CharField(max_length=36, unique=True) # uuid
     priceband = models.ForeignKey(PriceBand)
     suppress_due_date = models.BooleanField(default=False)
+    notes = models.CharField(max_length=500, default='')
     name = models.CharField(max_length=500) # xero max is 500
     updated = models.DateTimeField()
     TERMS_CHOICES = (

@@ -166,6 +166,7 @@ def startinvoice(request):
                    "shortcode": settings.XERO_ORGANISATION_SHORTCODE})
 
 class ContactOptionsForm(forms.Form):
+    notes = forms.CharField(label="Notes", max_length=500, required=False)
     priceband = forms.ModelChoiceField(
         queryset=PriceBand.objects,
         label="Price band",
@@ -361,6 +362,7 @@ def invoice(request, contactid, bill=False):
             contact_extra.name = contactname
             contact_extra.updated = timezone.now()
             contact_extra.priceband = cform.cleaned_data['priceband']
+            contact_extra.notes = cform.cleaned_data['notes']
             contact_extra.suppress_due_date = cform.cleaned_data['suppress_due_date']
             # We can only update the term fields if we contacted Xero
             # this request.
@@ -415,6 +417,7 @@ def invoice(request, contactid, bill=False):
         if contact_extra:
             priceband = contact_extra.priceband
             initial['priceband'] = priceband
+            initial['notes'] = contact_extra.notes
             initial['suppress_due_date'] = contact_extra.suppress_due_date
         cform = ContactOptionsForm(initial=initial)
         iform = InvoiceLineFormSet(
