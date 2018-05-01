@@ -174,9 +174,6 @@ class ContactOptionsForm(forms.Form):
         widget=forms.Select(attrs={"onChange":'javascript: submit()'}),
     )
     date = forms.DateField(label="Date")
-    suppress_due_date = forms.BooleanField(
-        label="Don't send due date",
-        required=False)
     reference = forms.CharField(label="Reference", max_length=255,
                                 required=False)
 
@@ -247,8 +244,6 @@ def _send_to_xero(contactid, contact_extra, lines, bill, date, reference):
         if contact_extra.invoice_terms:
             duedate = _calc_due(date, contact_extra.invoice_days,
                                 contact_extra.invoice_terms)
-    if contact_extra.suppress_due_date:
-        duedate = None
 
     try:
         invid, warnings = xero.send_invoice(
@@ -364,7 +359,6 @@ def invoice(request, contactid, bill=False):
             contact_extra.updated = timezone.now()
             contact_extra.priceband = cform.cleaned_data['priceband']
             contact_extra.notes = cform.cleaned_data['notes']
-            contact_extra.suppress_due_date = cform.cleaned_data['suppress_due_date']
             # We can only update the term fields if we contacted Xero
             # this request.
             if contact:
@@ -419,7 +413,6 @@ def invoice(request, contactid, bill=False):
             priceband = contact_extra.priceband
             initial['priceband'] = priceband
             initial['notes'] = contact_extra.notes
-            initial['suppress_due_date'] = contact_extra.suppress_due_date
         cform = ContactOptionsForm(initial=initial)
         iform = InvoiceLineFormSet(
             priceband, bill, contact_extra,
