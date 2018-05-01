@@ -166,7 +166,8 @@ def startinvoice(request):
                    "shortcode": settings.XERO_ORGANISATION_SHORTCODE})
 
 class ContactOptionsForm(forms.Form):
-    notes = forms.CharField(label="Notes", max_length=500, required=False)
+    notes = forms.CharField(label="Notes", max_length=500, required=False,
+                            widget=forms.TextInput(attrs={'size': '80'}))
     priceband = forms.ModelChoiceField(
         queryset=PriceBand.objects,
         label="Price band",
