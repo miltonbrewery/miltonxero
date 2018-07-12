@@ -160,3 +160,19 @@ def send_invoice(contactid, priceband, items, bill, date, duedate, reference):
         raise Problem("No invoice ID was returned")
     warnings = [w.text for w in i.findall("./Warnings/Warning/Message")]
     return invid, warnings
+
+def test_connection():
+    """Test the connection to Xero by retrieving organisation name"""
+    r = requests.get(XERO_ENDPOINT_URL + "Organisation/", auth=oauth)
+    if r.status_code != 200:
+        return "Connection failed: status code {}".format(r.status_code)
+    root = fromstring(r.text)
+    if root.tag != "Response":
+        return "Connection failed: root of response was not 'Response'."
+    org = None
+    orgs = root.find("Organisations")
+    if orgs is not None:
+        org = orgs.find("Organisation")
+    if org is None:
+        return "Connection failed: no organisation details in response"
+    return _fieldtext(org, "Name")
