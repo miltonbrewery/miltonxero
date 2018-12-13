@@ -14,7 +14,7 @@ class PriceBand(models.Model):
         return self.name
 
     def get_absolute_url(self):
-        return reverse('priceband', [self.pk])
+        return reverse('priceband', args=[self.pk])
 
     def apply_rules_for(self, item):
         """Price per barrel, rules and account for an invoice item
@@ -72,7 +72,7 @@ class Contact(models.Model):
         return self.name
 
     def get_absolute_url(self):
-        return reverse('invoice', [self.xero_id])
+        return reverse('invoice', args=[self.xero_id])
 
 class ProductType(models.Model):
     """Type of product, eg. real ale or craft keg
@@ -108,7 +108,7 @@ class Product(models.Model):
         ordering = ['name']
 
     def get_absolute_url(self):
-        return reverse('edit-product', [self.pk])
+        return reverse('edit-product', args=[self.pk])
 
 def _round_up_to(amount, multiple):
     difference = amount % multiple
