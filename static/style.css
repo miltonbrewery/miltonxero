@@ -60,6 +60,10 @@ td.invoiceitem input {
     width: 25em;
 }
 
+td.invoiceitemgyle input {
+    width: 5em;
+}
+
 td.price {
     text-align: right;
 }

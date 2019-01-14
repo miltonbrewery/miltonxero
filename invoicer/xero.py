@@ -112,6 +112,7 @@ def update_products(products):
         return r.status_code
 
 def send_invoice(contactid, priceband, items, bill, date, duedate, reference):
+    # items is a list of (item, gyle) tuples
     invoices = Element("Invoices")
     inv = SubElement(invoices, "Invoice")
     inv.append(_textelem("Type", "ACCPAY" if bill else "ACCREC"))
@@ -130,10 +131,12 @@ def send_invoice(contactid, priceband, items, bill, date, duedate, reference):
         else:
             inv.append(_textelem("Reference", reference))
     litems = SubElement(inv, "LineItems")
-    for i in items:
+    for i, gyle in items:
         li = SubElement(litems, "LineItem")
-        li.append(_textelem("Description",
-                            str(i) + " ({}% ABV)".format(i.product.abv)))
+        desc = "{} ({}% ABV)".format(i, i.product.abv)
+        if gyle:
+            desc += " (gyle {})".format(gyle)
+        li.append(_textelem("Description", desc))
         li.append(_textelem("ItemCode", i.product.code))
         li.append(_textelem("Quantity", str(i.barrels)))
         li.append(_textelem("AccountCode", i[priceband].account))

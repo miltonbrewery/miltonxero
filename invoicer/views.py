@@ -214,7 +214,7 @@ def _calc_due(date, days, policy):
 
 def _send_to_xero(contactid, contact_extra, lines, bill, date, reference):
     products = set()
-    invitems = []
+    invitems = [] # List of (item, gyle) tuples
     for l in lines:
         il = parse_item(l['item'], exactmatch=True, contact=contact_extra, isBill=bill)
         if len(il) != 1:
@@ -223,7 +223,7 @@ def _send_to_xero(contactid, contact_extra, lines, bill, date, reference):
         item = il[0]
         if not item.product.sent:
             products.add(item.product)
-        invitems.append(item)
+        invitems.append((item, l['gyle']))
 
     if products:
         problem = xero.update_products(products)
@@ -259,6 +259,7 @@ class InvoiceLineForm(forms.Form):
         super(InvoiceLineForm, self).__init__(*args, **kwargs)
         self.cp = None
     item = forms.CharField(max_length=500, required=True)
+    gyle = forms.CharField(max_length=10, required=False)
     def clean(self):
         cleaned_data = super(InvoiceLineForm, self).clean()
         if "item" not in cleaned_data:

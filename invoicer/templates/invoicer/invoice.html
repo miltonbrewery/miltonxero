@@ -24,15 +24,16 @@
     <thead>
       <tr>
 	{% if iform.can_delete %}
-	<th>Delete</th>
+	<th scope="col">Delete</th>
 	{% endif %}
-	<th>Item</th>
-	<th>ABV</th>
-	<th>Barrels</th>
-	<th>Price/barrel</th>
-	<th>Total ex&nbsp;VAT</th>
-	<th>Total inc&nbsp;VAT</th>
-	<th>Account</th>
+	<th scope="col">Item</th>
+	<th scope="col">Gyle</th>
+	<th scope="col">ABV</th>
+	<th scope="col">Barrels</th>
+	<th scope="col">Price/barrel</th>
+	<th scope="col">Total ex&nbsp;VAT</th>
+	<th scope="col">Total inc&nbsp;VAT</th>
+	<th scope="col">Account</th>
 	<th></th>
       </tr>
     </thead>
@@ -47,6 +48,16 @@
 	  {% if form.item.errors %}
 	  <ul class="errorlist">
 	    {% for err in form.item.errors %}
+	    <li>{{err}}</li>
+	    {% endfor %}
+	  </ul>
+	  {% endif %}
+	</td>
+	<td class="invoiceitemgyle">
+	  {{form.gyle.as_widget}}
+	  {% if form.gyle.errors %}
+	  <ul class="errorlist">
+	    {% for err in form.gyle.errors %}
 	    <li>{{err}}</li>
 	    {% endfor %}
 	  </ul>
