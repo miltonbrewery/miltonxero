@@ -6,6 +6,24 @@ from django.core.urlresolvers import reverse
 
 zero = Decimal("0.00")
 
+class CaseInsensitiveFieldMixin:
+    """
+    Field mixin that uses case-insensitive lookup alternatives if they exist.
+    """
+    LOOKUP_CONVERSIONS = {
+        'exact': 'iexact',
+        'contains': 'icontains',
+        'startswith': 'istartswith',
+        'endswith': 'iendswith',
+        'regex': 'iregex',
+    }
+    def get_lookup(self, lookup_name):
+        converted = self.LOOKUP_CONVERSIONS.get(lookup_name, lookup_name)
+        return super().get_lookup(converted)
+
+class CICharField(CaseInsensitiveFieldMixin, models.CharField):
+    pass
+
 class PriceBand(models.Model):
     """A named group of pricing details."""
     name = models.CharField(max_length=40, unique=True)
@@ -94,7 +112,7 @@ class Unit(models.Model):
         return self.name
 
 class Product(models.Model):
-    code = models.CharField(max_length=30, unique=True) # xero max is 30
+    code = CICharField(max_length=30, unique=True) # xero max is 30
     name = models.CharField(max_length=80, unique=True) # XXX xero max is 50, and we're adding the ABV too
     abv = models.DecimalField(max_digits=3, decimal_places=1)
     type = models.ForeignKey(ProductType)
