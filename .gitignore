@@ -1,7 +1,8 @@
-consumer-key
-private-key
-xero-shortcode
-django-secret-key
+/consumer-key
+/private-key
+/xero-shortcode
+/django-secret-key
 *~
 *.pyc
 __pycache__
+/venv/

@@ -2,7 +2,7 @@ from django.db import models
 from django.db.models import Q
 from decimal import Decimal, ROUND_UP
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 zero = Decimal("0.00")
 
@@ -69,7 +69,7 @@ class Contact(models.Model):
     bill_{days,terms} and invoice_{days,terms}.
     """
     xero_id = models.CharField(max_length=36, unique=True) # uuid
-    priceband = models.ForeignKey(PriceBand)
+    priceband = models.ForeignKey(PriceBand, on_delete=models.CASCADE)
     notes = models.CharField(max_length=500, default='')
     name = models.CharField(max_length=500) # xero max is 500
     updated = models.DateTimeField()
@@ -106,7 +106,7 @@ class Unit(models.Model):
                             "in may require code changes to work")
     size = models.DecimalField(max_digits=5, decimal_places=4,
                                help_text="Size in barrels")
-    type = models.ForeignKey(ProductType)
+    type = models.ForeignKey(ProductType, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
@@ -115,7 +115,7 @@ class Product(models.Model):
     code = CICharField(max_length=30, unique=True) # xero max is 30
     name = models.CharField(max_length=80, unique=True) # XXX xero max is 50, and we're adding the ABV too
     abv = models.DecimalField(max_digits=3, decimal_places=1)
-    type = models.ForeignKey(ProductType)
+    type = models.ForeignKey(ProductType, on_delete=models.CASCADE)
     swap = models.BooleanField(default=True)
     sent = models.BooleanField(default=False, help_text="Has this product code "
                                "been sent to Xero yet?")
@@ -161,8 +161,10 @@ class ProgramRule(models.Model):
 class Price(models.Model):
     """A rule applied to price calculations that match the criteria"""
     # Criteria:
-    band = models.ForeignKey(PriceBand, blank=True, null=True)
-    type = models.ForeignKey(ProductType, blank=True, null=True)
+    band = models.ForeignKey(PriceBand, blank=True, null=True,
+                             on_delete=models.CASCADE)
+    type = models.ForeignKey(ProductType, blank=True, null=True,
+                             on_delete=models.CASCADE)
     abv = models.DecimalField(max_digits=3, decimal_places=1,
                               blank=True, null=True)
     isSwap = models.NullBooleanField(
@@ -171,9 +173,12 @@ class Price(models.Model):
     isBill = models.NullBooleanField(
         help_text="Match on whether we are preparing an invoice or a "
         "bill; 'Unknown' matches either way")
-    product = models.ForeignKey(Product, blank=True, null=True)
-    unit = models.ForeignKey(Unit, blank=True, null=True)
-    contact = models.ForeignKey(Contact, blank=True, null=True)
+    product = models.ForeignKey(Product, blank=True, null=True,
+                                on_delete=models.CASCADE)
+    unit = models.ForeignKey(Unit, blank=True, null=True,
+                             on_delete=models.CASCADE)
+    contact = models.ForeignKey(Contact, blank=True, null=True,
+                                on_delete=models.CASCADE)
     # Rules to apply:
     priority = models.IntegerField(
         default=100,
@@ -188,7 +193,7 @@ class Price(models.Model):
         help_text="The new price per barrel when this rule is applied, ignoring "
         "prices set by any previous rules")
     rule = models.ForeignKey(
-        ProgramRule, blank=True, null=True,
+        ProgramRule, blank=True, null=True, on_delete=models.CASCADE,
         help_text="A programmed rule to alter the price and/or account")
     account = models.CharField(
         max_length=10, blank=True,

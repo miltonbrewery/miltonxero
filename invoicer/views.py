@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseRedirect, Http404, JsonResponse
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db.models import Q
 from django.db import transaction
 from django.utils import timezone

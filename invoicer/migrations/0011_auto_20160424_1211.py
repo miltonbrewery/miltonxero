@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='price',
             name='contact',
-            field=models.ForeignKey(to='invoicer.Contact', blank=True, null=True),
+            field=models.ForeignKey(to='invoicer.Contact', blank=True, null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -67,19 +67,19 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='price',
             name='product',
-            field=models.ForeignKey(to='invoicer.Product', blank=True, null=True),
+            field=models.ForeignKey(to='invoicer.Product', blank=True, null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='price',
             name='rule',
-            field=models.ForeignKey(to='invoicer.ProgramRule', blank=True, help_text='A programmed rule to alter the price and/or account', null=True),
+            field=models.ForeignKey(to='invoicer.ProgramRule', blank=True, help_text='A programmed rule to alter the price and/or account', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='price',
             name='unit',
-            field=models.ForeignKey(to='invoicer.Unit', blank=True, null=True),
+            field=models.ForeignKey(to='invoicer.Unit', blank=True, null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AlterField(
@@ -91,7 +91,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='price',
             name='band',
-            field=models.ForeignKey(to='invoicer.PriceBand', blank=True, null=True),
+            field=models.ForeignKey(to='invoicer.PriceBand', blank=True, null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AlterField(
@@ -103,7 +103,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='price',
             name='type',
-            field=models.ForeignKey(to='invoicer.ProductType', blank=True, null=True),
+            field=models.ForeignKey(to='invoicer.ProductType', blank=True, null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(

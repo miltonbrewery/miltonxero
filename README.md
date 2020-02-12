@@ -18,7 +18,7 @@ This code is unlikely to be useful to anyone else as-is!
 Copying
 -------
 
-miltonxero is Copyright (C) 2016 Stephen Early <steve@assorted.org.uk>
+miltonxero is Copyright (C) 2016–2020 Stephen Early <steve@assorted.org.uk>
 
 It is distributed under the terms of the GNU General Public License
 as published by the Free Software Foundation, either version 3

@@ -58,7 +58,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True, serialize=False)),
                 ('price', models.DecimalField(max_digits=6, decimal_places=2)),
-                ('band', models.ForeignKey(to='invoicer.PriceBand')),
+                ('band', models.ForeignKey(to='invoicer.PriceBand', on_delete=models.CASCADE)),
             ],
             options={
             },
@@ -89,25 +89,25 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='product',
             name='type',
-            field=models.ForeignKey(to='invoicer.ProductType'),
+            field=models.ForeignKey(to='invoicer.ProductType', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='priceoverride',
             name='product',
-            field=models.ForeignKey(to='invoicer.Product'),
+            field=models.ForeignKey(to='invoicer.Product', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='price',
             name='band',
-            field=models.ForeignKey(to='invoicer.PriceBand'),
+            field=models.ForeignKey(to='invoicer.PriceBand', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='price',
             name='type',
-            field=models.ForeignKey(to='invoicer.ProductType'),
+            field=models.ForeignKey(to='invoicer.ProductType', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(
@@ -117,13 +117,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='contact',
             name='default_priceband',
-            field=models.ForeignKey(to='invoicer.PriceBand'),
+            field=models.ForeignKey(to='invoicer.PriceBand', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='configoption',
             name='band',
-            field=models.ForeignKey(to='invoicer.PriceBand'),
+            field=models.ForeignKey(to='invoicer.PriceBand', on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AlterUniqueTogether(
