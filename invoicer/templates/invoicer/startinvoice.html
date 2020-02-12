@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
 {% block scripts %}
-<script type="text/javascript" src="{% static "auto-complete.js" %}"></script>
-<link rel="STYLESHEET" type="text/css" href="{% static "auto-complete.css" %}">
+<script type="text/javascript" src="{% static "select2.min.js" %}"></script>
+<link rel="STYLESHEET" type="text/css" href="{% static "select2.min.css" %}">
 {% endblock %}
 {% block title %}Choose contact for invoice{% endblock %}
 {% block body %}
@@ -12,44 +12,16 @@
 <div id="accordion">
   <h3>Contacts</h3>
   <div>
-    <form id="invoiceform" method="POST">{% csrf_token %}
-      <h4>Invoice to customer</h4>
-      {{iform.as_p}}
-      <input type="submit" value="Create invoice">
+    <h4>Create an invoice or bill</h4>
+    <form id="contactform" method="POST">{% csrf_token %}
+      <p><label for="id_contact">Contact name:</label>
+	<select name="contact" id="id_contact">
+	</select>
+	<p></p>
+	<button type="submit" name="invoice">Create invoice to customer</button>
+	<button type="submit" name="bill">Enter bill from supplier</button>
     </form>
-<script type="text/javascript">
-var invoice_autoComplete = new autoComplete({
-  selector: 'input[name="invoice-name"]',
-  minChars: 2,
-  source: function(term, response){
-    $.getJSON('{% url "contact-completions" %}', { q: term },
-    function(data) { response(data); });
-  },
-  onSelect: function(event, term, item){
-    document.getElementById("invoiceform").submit();
-  },
-});
-</script>
     <hr>
-    <h4>Bill from supplier</h4>
-    <form id="billform" method="POST">{% csrf_token %}
-      {{bform.as_p}}
-      <input type="submit" value="Enter bill">
-    </form>
-<script type="text/javascript">
-var bill_autoComplete = new autoComplete({
-  selector: 'input[name="bill-name"]',
-  minChars: 2,
-  source: function(term, response){
-    $.getJSON('{% url "contact-completions" %}', { q: term },
-    function(data) { response(data); });
-  },
-  onSelect: function(event, term, item){
-    document.getElementById("billform").submit();
-  },
-});
-</script>
-<hr>
     <p><a href="https://go.xero.com/organisationlogin/default.aspx?shortcode={{shortcode}}&redirecturl=/Contacts/Edit.aspx">Add a new
 	contact.  (Contacts cannot be removed once added.)</a></p>
     <p><a href="https://go.xero.com/organisationlogin/default.aspx?shortcode={{shortcode}}&amp;redirecturl=/AccountsReceivable/Search.aspx?invoiceStatus=INVOICESTATUS/DRAFT">Go to draft invoices</a></p>
@@ -79,8 +51,18 @@ var bill_autoComplete = new autoComplete({
 </div>
 
 <script type="text/javascript">
-  $(function() {
+  $(document).ready(function() {
     $( "#accordion" ).accordion();
+    $('#id_contact').select2({
+      width: '300px',
+      ajax: {
+        url: '{% url "contact-completions" %}',
+        dataType: 'json',
+        delay: 250
+      },
+      minimumInputLength: 2,
+      placeholder: 'Choose a contact'
+    });
   });
 </script>
 

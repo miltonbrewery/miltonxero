@@ -124,44 +124,28 @@ def priceband(request, bandid):
                    "form": form,
                    })
 
-class ChooseContactForm(forms.Form):
-    name = forms.CharField(label="Contact name", max_length=500)
-
 @login_required
 def startinvoice(request):
     pricebands = PriceBand.objects.all()
     ptypes = ProductType.objects.all()
     if request.method == "POST":
-        iform = ChooseContactForm(request.POST, prefix="invoice")
-        bform = ChooseContactForm(request.POST, prefix="bill")
-        if iform.is_valid():
-            contacts = xero.get_contacts(iform.cleaned_data['name'])
-            if not contacts:
-                iform.add_error('name', "No contact exists with this name")
-            elif len(contacts) == 1:
-                return HttpResponseRedirect(
-                    reverse("invoice", args=[contacts[0]["ContactID"]]))
-            else:
-                return render(request, 'invoicer/multicontact.html',
-                              {"contacts": contacts})
-        if bform.is_valid():
-            contacts = xero.get_contacts(bform.cleaned_data['name'])
-            if not contacts:
-                bform.add_error('name', "No contact exists with this name")
-            elif len(contacts) == 1:
-                return HttpResponseRedirect(
-                    reverse("bill", args=[contacts[0]["ContactID"]]))
-            else:
-                return render(request, 'invoicer/multicontact.html',
-                              {"contacts": contacts})
-    else:
-        iform = ChooseContactForm(prefix="invoice")
-        bform = ChooseContactForm(prefix="bill")
+        # The "select contact" form is rendered manually in the
+        # template, using a <select> widget and the javascript select2
+        # library.  We should receive zero or one Xero contact IDs.
+
+        # We are not sanity checking the value returned for 'contact',
+        # however the caller can't achieve anything by specifying an
+        # invalid 'contact' that they couldn't do by visiting the URL
+        # we redirect them to.
+        if 'contact' not in request.POST:
+            messages.error(request, "You must choose a contact")
+            return HttpResponseRedirect(reverse("new-invoice"))
+        rtype = "bill" if "bill" in request.POST else "invoice"
+        return HttpResponseRedirect(
+            reverse(rtype, args=[request.POST['contact']]))
 
     return render(request, 'invoicer/startinvoice.html',
-                  {"iform": iform,
-                   "bform": bform,
-                   "bands": pricebands,
+                  {"bands": pricebands,
                    "ptypes": ptypes,
                    "shortcode": settings.XERO_ORGANISATION_SHORTCODE})
 
@@ -432,7 +416,9 @@ def invoice(request, contactid, bill=False):
 def contact_completions(request):
     q = request.GET['q']
     l = xero.get_contacts(q, use_contains=True)
-    return JsonResponse([x["Name"] for x in l], safe=False)
+    return JsonResponse({
+        'results': [{'id': x["ContactID"], 'text': x["Name"]} for x in l],
+    })
 
 class InvoiceItemBand:
     def __init__(self, item, priceband):
