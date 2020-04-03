@@ -393,11 +393,11 @@ def invoice(request, contactid, bill=False):
                 initial['date'] = datetime.date(*stored_date[:3])
             initial['reference'] = request.session.get(
                 storename + '-reference', "")
-        priceband = None
+        priceband = PriceBand.objects.get(pk=2) # Default to private sales
         if contact_extra:
             priceband = contact_extra.priceband
-            initial['priceband'] = priceband
             initial['notes'] = contact_extra.notes
+        initial['priceband'] = priceband
         cform = ContactOptionsForm(initial=initial)
         iform = InvoiceLineFormSet(
             priceband, bill, contact_extra,
