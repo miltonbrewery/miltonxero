@@ -126,6 +126,17 @@ def priceband(request, bandid):
 
 @login_required
 def startinvoice(request):
+    if not xero.connection_ok(request):
+        return xero.connect(request)
+
+    if request.method == 'POST' and 'xero-disconnect' in request.POST:
+        ok = xero.disconnect(request)
+        if ok:
+            messages.info(request, "Disconnected from Xero")
+        else:
+            messages.error(request, "Failed to disconnect from Xero")
+        return redirect('new-invoice')
+
     pricebands = PriceBand.objects.all()
     ptypes = ProductType.objects.all()
     if request.method == "POST":
@@ -210,7 +221,7 @@ def _send_to_xero(contactid, contact_extra, lines, bill, date, reference):
         invitems.append((item, l['gyle']))
 
     if products:
-        problem = xero.update_products(products)
+        problem = xero.update_products(request, products)
         if problem:
             raise _XeroSendFailure("Received {} response when sending product "
                                    "details to Xero.  Products were: {}.".format(
@@ -231,8 +242,8 @@ def _send_to_xero(contactid, contact_extra, lines, bill, date, reference):
 
     try:
         invid, warnings = xero.send_invoice(
-            contactid, contact_extra.priceband, invitems, bill, date, duedate,
-            reference)
+            request, contactid, contact_extra.priceband,
+            invitems, bill, date, duedate, reference)
     except xero.Problem as e:
         raise _XeroSendFailure("Failed sending to Xero: {}".format(
             e.message))
@@ -320,7 +331,7 @@ def invoice(request, contactid, bill=False):
     if not contact_extra or \
        contact_extra.updated < (timezone.now() - datetime.timedelta(
            minutes=5)):
-        contact = xero.get_contact(contactid)
+        contact = xero.get_contact(request, contactid)
         if not contact:
             raise Http404
         contactname = contact['Name']
@@ -415,7 +426,7 @@ def invoice(request, contactid, bill=False):
 @login_required
 def contact_completions(request):
     q = request.GET['q']
-    l = xero.get_contacts(q, use_contains=True)
+    l = xero.get_contacts(request, q, use_contains=True)
     return JsonResponse({
         'results': [{'id': x["ContactID"], 'text': x["Name"]} for x in l],
     })
@@ -565,7 +576,7 @@ class ProductForm(forms.ModelForm):
         # We validate the code if there's no existing product or if
         # the code has changed
         if not (self.instance and code == self.instance.code):
-            xero_match = xero.get_product(code)
+            xero_match = xero.get_product(request, code)
             if xero_match:
                 raise forms.ValidationError(
                     "Code {} already exists in Xero for {}".format(
@@ -640,7 +651,7 @@ def productcode_check(request):
              'error': 'In use for {}'.format(product.name)})
     except Product.DoesNotExist:
         pass
-    c = xero.get_product(q)
+    c = xero.get_product(request, q)
     if c:
         return JsonResponse(
             {'ok': False,
@@ -659,3 +670,7 @@ def productname_check(request):
     except Product.DoesNotExist:
         pass
     return JsonResponse({'ok': True, 'error': 'Ok'})
+
+@login_required
+def xero_callback(request):
+    return xero.connect_callback(request)

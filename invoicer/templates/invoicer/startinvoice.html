@@ -46,6 +46,9 @@
     <p><a href="{% url "admin:invoicer_price_changelist" %}">Add, edit or remove price rules</a></p>
 
     <p><a href="{% url "admin:index" %}">Other maintenance options</a></p>
+    <form method="POST">{% csrf_token %}
+	<button type="submit" name="xero-disconnect">Disconnect from Xero</button>
+    </form>
   </div>
 </div>
 </div>

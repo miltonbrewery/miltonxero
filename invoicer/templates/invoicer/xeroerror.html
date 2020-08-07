@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Connection error{% endblock %}
+{% block body %}
+<h1>Error connecting to Xero</h1>
+
+<p>The connection to Xero did not succeed.</p>
+
+<p>The error returned by Xero was: {{error}}</p>
+
+<p><a href="{% url "new-invoice" %}">Click here to try again</a></p>
+
+{% endblock %}

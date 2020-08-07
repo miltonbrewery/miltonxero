@@ -109,10 +109,10 @@ TEMPLATES = [
     },
 ]
 
-XERO_CONSUMER_KEY = read("consumer-key")
+XERO_CLIENT_ID = read("oauth2-client-id")
+XERO_CLIENT_SECRET = read("oauth2-client-secret")
 
-XERO_PRIVATE_KEY = read("private-key")
-
+XERO_ORGANISATION_ID = read("xero-orgid")
 XERO_ORGANISATION_SHORTCODE = read("xero-shortcode")
 
 # Current VAT multiplier
