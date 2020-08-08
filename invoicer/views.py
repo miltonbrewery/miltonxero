@@ -207,7 +207,8 @@ def _calc_due(date, days, policy):
     else:
         return None
 
-def _send_to_xero(contactid, contact_extra, lines, bill, date, reference):
+def _send_to_xero(request, contactid, contact_extra, lines,
+                  bill, date, reference):
     products = set()
     invitems = [] # List of (item, gyle) tuples
     for l in lines:
@@ -373,6 +374,7 @@ def invoice(request, contactid, bill=False):
                     return HttpResponseRedirect(request.path)
                 try:
                     invid, warnings = _send_to_xero(
+                        request,
                         contactid, contact_extra, request.session[storename],
                         bill, cform.cleaned_data['date'], cform.cleaned_data['reference'])
                     del request.session[storename]
