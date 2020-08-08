@@ -84,7 +84,7 @@ def connect_callback(request):
             XERO_CONNECT_URL,
             client_id=client_id,
             client_secret=client_secret,
-            authorization_response=request.get_full_path())
+            authorization_response=request.build_absolute_uri())
         request.session['xero-token'] = token
         return redirect('new-invoice')
     except OAuth2Error as e:
