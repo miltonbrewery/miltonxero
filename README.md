@@ -15,6 +15,9 @@ supports their pricing scheme.
 
 This code is unlikely to be useful to anyone else as-is!
 
+*Note:* when running locally using `./manage.py runserver`, you must
+set the environment variable `OAUTHLIB_INSECURE_TRANSPORT=1`
+
 Copying
 -------
 
