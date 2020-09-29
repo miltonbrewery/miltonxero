@@ -47,7 +47,7 @@ def xero_session(request, state=None, omit_tenant=False):
         redirect_uri="http://localhost:8000/xero/callback/" if settings.DEBUG \
         else "https://milton-invoice.assorted.org.uk/xero/callback/",
         scope=["offline_access", "accounting.transactions",
-               "accounting.contacts.read"],
+               "accounting.contacts.read", "accounting.settings"],
         **kwargs)
 
     if not omit_tenant:
