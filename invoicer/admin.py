@@ -32,8 +32,13 @@ class PriceAdmin(admin.ModelAdmin):
         }),
     )
 
+class ContactAdmin(admin.ModelAdmin):
+    list_display = ('name', 'priceband', 'notes')
+    list_filter = ('priceband', )
+    search_fields = ('name', 'notes')
+
 admin.site.register(PriceBand)
-admin.site.register(Contact)
+admin.site.register(Contact, ContactAdmin)
 admin.site.register(ProductType)
 admin.site.register(Unit)
 admin.site.register(Product, ProductAdmin)
