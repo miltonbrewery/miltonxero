@@ -70,7 +70,7 @@ class Contact(models.Model):
     """
     xero_id = models.CharField(max_length=36, unique=True) # uuid
     priceband = models.ForeignKey(PriceBand, on_delete=models.CASCADE)
-    notes = models.CharField(max_length=500, default='')
+    notes = models.CharField(max_length=500, blank=True, default='')
     name = models.CharField(max_length=500) # xero max is 500
     updated = models.DateTimeField()
     TERMS_CHOICES = (
