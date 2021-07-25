@@ -167,10 +167,12 @@ class Price(models.Model):
                              on_delete=models.CASCADE)
     abv = models.DecimalField(max_digits=3, decimal_places=1,
                               blank=True, null=True)
-    isSwap = models.NullBooleanField(
+    isSwap = models.BooleanField(
+        null=True,
         help_text="Match on whether the product has the 'swap' tickbox "
         "set; 'Unknown' matches either way")
-    isBill = models.NullBooleanField(
+    isBill = models.BooleanField(
+        null=True,
         help_text="Match on whether we are preparing an invoice or a "
         "bill; 'Unknown' matches either way")
     product = models.ForeignKey(Product, blank=True, null=True,
