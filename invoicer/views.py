@@ -572,13 +572,18 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = ['code', 'name', 'abv', 'type', 'swap']
+
+    def __init__(self, request, *args, **kwargs):
+        self.request = request
+        super().__init__(*args, **kwargs)
+
     def clean(self):
         cleaned_data = super(ProductForm, self).clean()
         code = cleaned_data.get("code")
         # We validate the code if there's no existing product or if
         # the code has changed
         if not (self.instance and code == self.instance.code):
-            xero_match = xero.get_product(request, code)
+            xero_match = xero.get_product(self.request, code)
             if xero_match:
                 raise forms.ValidationError(
                     "Code {} already exists in Xero for {}".format(
@@ -593,7 +598,7 @@ def product(request, productid=None):
         except Product.DoesNotExist:
             raise Http404
     if request.method == 'POST':
-        form = ProductForm(request.POST, instance=product)
+        form = ProductForm(request, request.POST, instance=product)
         if form.is_valid():
             o = form.save(commit=False)
             if "code" in form.changed_data or "name" in form.changed_data \
@@ -606,7 +611,7 @@ def product(request, productid=None):
             messages.success(request, "Product updated")
             return HttpResponseRedirect(o.get_absolute_url())
     else:
-        form = ProductForm(instance=product)
+        form = ProductForm(request, instance=product)
     # Table has price band across the top, relevant units down the left
     if product:
         rules = Price.objects.filter(product=product).all()
