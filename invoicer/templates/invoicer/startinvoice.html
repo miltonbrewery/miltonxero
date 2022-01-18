@@ -66,6 +66,11 @@
       minimumInputLength: 2,
       placeholder: 'Choose a contact'
     });
+    // hack to fix jquery 3.6 focus security patch that bugs auto
+    // focus in select2
+    $(document).on('select2:open', () => {
+      document.querySelector('.select2-search__field').focus();
+    });
   });
 </script>
 
