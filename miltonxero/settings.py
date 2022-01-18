@@ -63,6 +63,16 @@ DATABASES = {
     }
 }
 
+# Type for auto-created primary keys (new in django-3.2)
+
+# In previous releases of Django this was implicitly
+# 'django.db.models.AutoField'; the new default is explicitly
+# 'django.db.models.BigAutoField'.
+
+# If this default is changed, migrations are currently NOT generated
+# automatically.
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
 
