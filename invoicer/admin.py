@@ -8,7 +8,7 @@ class ProductAdmin(admin.ModelAdmin):
     ordering = ('name', )
 
 class PriceAdmin(admin.ModelAdmin):
-    list_filter = ('band', 'type', 'unit', )
+    list_filter = ('band', 'type', 'unit', 'priority')
     ordering = ('priority',)
     list_display = ('__str__', 'priority', 'comment')
     fieldsets = (
