@@ -5,6 +5,10 @@ from django.conf import settings
 from django.urls import reverse
 
 zero = Decimal("0.00")
+penny = Decimal("0.01")
+fifty_pence = Decimal("0.50")
+pound = Decimal("1.00")
+
 
 class CaseInsensitiveFieldMixin:
     """
@@ -21,8 +25,10 @@ class CaseInsensitiveFieldMixin:
         converted = self.LOOKUP_CONVERSIONS.get(lookup_name, lookup_name)
         return super().get_lookup(converted)
 
+
 class CICharField(CaseInsensitiveFieldMixin, models.CharField):
     pass
+
 
 class PriceBand(models.Model):
     """A named group of pricing details."""
@@ -58,8 +64,9 @@ class PriceBand(models.Model):
         applied = []
         for r in rules:
             price, account = r.apply(item, price, account)
-            applied.append((r, "{} / {}".format(price, account)))
+            applied.append((r, f"{price} / {account}"))
         return price, account, applied
+
 
 class Contact(models.Model):
     """Extra details for Xero contacts.
@@ -92,6 +99,7 @@ class Contact(models.Model):
     def get_absolute_url(self):
         return reverse('invoice', args=[self.xero_id])
 
+
 class ProductType(models.Model):
     """Type of product, eg. real ale or craft keg
     """
@@ -99,6 +107,7 @@ class ProductType(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class Unit(models.Model):
     """A unit in which products are sold"""
@@ -111,6 +120,7 @@ class Unit(models.Model):
     def __str__(self):
         return self.name
 
+
 class Product(models.Model):
     code = CICharField(max_length=30, unique=True) # xero max is 30
     name = models.CharField(max_length=80, unique=True) # XXX xero max is 50, and we're adding the ABV too
@@ -119,14 +129,17 @@ class Product(models.Model):
     swap = models.BooleanField(default=True)
     sent = models.BooleanField(default=False, help_text="Has this product code "
                                "been sent to Xero yet?")
+
     def __str__(self):
         # This is used as the Xero item description
         return "{} ({}% ABV)".format(self.name,self.abv)
+
     class Meta:
         ordering = ['name']
 
     def get_absolute_url(self):
         return reverse('edit-product', args=[self.pk])
+
 
 def _round_up_to(amount, multiple):
     difference = amount % multiple
@@ -140,23 +153,41 @@ def _vatinc_roundup_adjustment(item, current_price, multiple):
     difference_inc_vat = desired_price - vatinc_price
     difference_ex_vat = difference_inc_vat / settings.VAT_MULTIPLIER
     difference_per_barrel = difference_ex_vat / item.unit.size
-    adjustment = difference_per_barrel.quantize(Decimal("0.01"))
+    adjustment = difference_per_barrel.quantize(penny)
     return adjustment
+
+def _round_item_up_to(item, current_price, multiple):
+    item_price = item.unit.size * current_price
+    rounded_item_price = _round_up_to(item_price, multiple)
+    rounded_barrel_price = rounded_item_price / item.unit.size
+    return rounded_barrel_price
+
 
 class ProgramRule(models.Model):
     """A pricing rule implemented in code"""
     name = models.CharField(max_length=80, unique=True)
     code = models.CharField(max_length=20)
+
     def __str__(self):
         return self.name
+
     def apply(self, item, price, account):
         if self.code == "vat-roundup-pound":
             price = price + _vatinc_roundup_adjustment(
-                item, price, Decimal("1.00"))
+                item, price, pound)
         elif self.code == "vat-roundup-50p":
             price = price + _vatinc_roundup_adjustment(
-                item, price, Decimal("0.50"))
+                item, price, fifty_pence)
+        elif self.code == "barrel-roundup-pound":
+            price = _round_up_to(price, pound)
+        elif self.code == "item-roundup-pound":
+            price = _round_item_up_to(item, price, pound)
+        elif self.code == "item-roundup-50p":
+            price = _round_item_up_to(item, price, fifty_pence)
+        elif self.code == "multiply-by-abv":
+            price = (price * item.product.abv).quantize(penny)
         return price, account
+
 
 class Price(models.Model):
     """A rule applied to price calculations that match the criteria"""
@@ -204,8 +235,10 @@ class Price(models.Model):
     # Just a comment, not used anywhere
     comment = models.CharField(
         max_length=80, blank=True)
+
     class Meta:
         ordering = ['priority']
+
     def __str__(self):
         things = []
         if self.band:
@@ -227,16 +260,17 @@ class Price(models.Model):
         criteria = " ".join(things) if things else "Always"
         things = []
         if self.price:
-            things.append("add £{}".format(self.price))
+            things.append(f"add £{self.price}")
         if self.absolute_price != None:
-            things.append("set £{}".format(self.absolute_price))
+            things.append(f"set £{self.absolute_price}")
         if self.rule:
             things.append(self.rule.name)
         if self.account:
             things.append("set account {}".format(self.account))
         actions = ", ".join(things) if things else "no effect"
-        return "{}: {}".format(
-            criteria, actions)
+        return f"{criteria}: {actions}"
+
+
     def apply(self, item, price, account):
         if self.price:
             price = price + self.price
