@@ -3,6 +3,7 @@ from django.db.models import Q
 from decimal import Decimal, ROUND_UP
 from django.conf import settings
 from django.urls import reverse
+import decimal
 
 zero = Decimal("0.00")
 penny = Decimal("0.01")
@@ -186,6 +187,12 @@ class ProgramRule(models.Model):
             price = _round_item_up_to(item, price, fifty_pence)
         elif self.code == "multiply-by-abv":
             price = (price * item.product.abv).quantize(penny)
+        elif self.code.startswith("multiply-by-"):
+            try:
+                price = (price * Decimal(self.code[12:])).quantize(penny)
+            except decimal.InvalidOperation:
+                pass
+
         return price, account
 
 
