@@ -28,5 +28,5 @@ retrying==1.3.3
 six==1.14.0
 sqlparse==0.4.4
 toml==0.10.2
-urllib3==1.26.6
+urllib3==1.26.17
 webencodings==0.5.1
