@@ -227,7 +227,7 @@ def send_invoice(request, contactid, priceband, items,
         li.append(_textelem("AccountCode", i[priceband].account))
         li.append(_textelem("UnitAmount", str(i[priceband].priceperbarrel)))
     xml = tostring(invoices)
-    r = session.put(XERO_ENDPOINT_URL + "Invoices/",
+    r = session.put(XERO_ENDPOINT_URL + "Invoices/?unitdp=4",
                      data={'xml': xml})
     if r.status_code == 400:
         root = fromstring(r.text)
